@@ -1,0 +1,44 @@
+{
+  "productos": [
+    {
+      "idProducto": 1,
+      "prdNombre": "celular",
+      "prdPrecio": "1250",
+      "prdDescripcion": "telefono movil"
+    },
+    {
+      "idProducto": 2,
+      "prdNombre": "parlante",
+      "prdPrecio": "1950",
+      "prdDescripcion": "escuchar musica"
+    }
+  ],
+  "marcas": [
+    {
+      "idMarca": 1,
+      "mkNombre": "nokia",
+      "mkPrecio": "1350"
+    },
+    {
+      "idMarca": 2,
+      "mkNombre": "JBL",
+      "mkPrecio": "2950"
+    }
+  ],
+  "turnos": [
+    {
+      "id": 1,
+      "servicio": "Yoga",
+      "nombre": "Natalia",
+      "dias": "Martes y Jueves",
+      "horario": "8:00"
+    },
+    {
+      "id": 2,
+      "servicio": "Meditacion",
+      "nombre": "Yanina",
+      "dias": "Lunes y Miercoles",
+      "horario": "8:00"
+    }
+  ]
+}

@@ -1,0 +1,267 @@
+.inicio-page {
+  margin: -20px;
+  color: #263630;
+  background: #fbf8f0;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.inicio-hero {
+  position: relative;
+  display: flex;
+  min-height: 590px;
+  align-items: center;
+  padding: 72px max(8vw, 32px);
+  color: #fffdf5;
+  background-image: linear-gradient(90deg, rgba(21, 43, 34, .82) 0%, rgba(21, 43, 34, .58) 48%, rgba(21, 43, 34, .08) 100%), url('/img/fondo_1.jpg');
+  background-position: center 44%;
+  background-size: cover;
+}
+
+.inicio-hero-content {
+  width: min(100%, 590px);
+}
+
+.inicio-eyebrow {
+  margin: 0 0 18px;
+  color: #b6d4bd;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.inicio-hero h1 {
+  max-width: 560px;
+  margin: 0;
+  font-size: 64px;
+  font-weight: 400;
+  line-height: 1.04;
+}
+
+.inicio-intro {
+  max-width: 475px;
+  margin: 24px 0 30px;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.inicio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.inicio-button {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color .2s ease, color .2s ease;
+}
+
+.inicio-button-primary {
+  color: #fffdf5;
+  background: #52745d;
+}
+
+.inicio-button-primary:hover,
+.inicio-button-primary:focus-visible {
+  color: #fff;
+  background: #385b45;
+}
+
+.inicio-button-secondary {
+  border-color: rgba(255, 253, 245, .75);
+  color: #fffdf5;
+  background: rgba(255, 253, 245, .08);
+}
+
+.inicio-button-secondary:hover,
+.inicio-button-secondary:focus-visible {
+  color: #263630;
+  background: #fffdf5;
+}
+
+.inicio-hero-caption {
+  position: absolute;
+  right: max(8vw, 32px);
+  bottom: 24px;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 12px;
+}
+
+.inicio-practicas {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 78px 36px 72px;
+}
+
+.inicio-section-heading {
+  max-width: 620px;
+  margin-bottom: 32px;
+}
+
+.inicio-section-heading .inicio-eyebrow,
+.inicio-cierre .inicio-eyebrow {
+  color: #52745d;
+}
+
+.inicio-section-heading h2,
+.inicio-cierre h2 {
+  margin: 0 0 12px;
+  font-size: 38px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+
+.inicio-section-heading > p:last-child {
+  margin: 0;
+  color: #58635c;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.inicio-actividades {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.inicio-actividad {
+  overflow: hidden;
+  background: #fff;
+}
+
+.inicio-actividad img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.inicio-actividad > div {
+  padding: 19px 20px 22px;
+}
+
+.inicio-actividad h3 {
+  margin: 0 0 8px;
+  font-size: 23px;
+  font-weight: 400;
+}
+
+.inicio-actividad p {
+  margin: 0;
+  color: #58635c;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.inicio-more-link {
+  display: inline-flex;
+  gap: 10px;
+  margin-top: 28px;
+  color: #385b45;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.inicio-cierre {
+  padding: 52px 24px 56px;
+  text-align: center;
+  background: #e9eee5;
+}
+
+.inicio-cierre h2 {
+  margin-bottom: 22px;
+}
+
+.inicio-login-prompt {
+  margin: 18px 0 0;
+  color: #58635c;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.inicio-login-prompt a {
+  color: #385b45;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .inicio-hero {
+    min-height: 530px;
+    padding: 60px 28px;
+    background-position: 58% center;
+  }
+
+  .inicio-hero h1 {
+    font-size: 48px;
+  }
+
+  .inicio-actividades {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .inicio-actividad {
+    display: grid;
+    grid-template-columns: minmax(120px, 38%) 1fr;
+    align-items: center;
+  }
+
+  .inicio-actividad img {
+    height: 100%;
+    min-height: 150px;
+    aspect-ratio: auto;
+  }
+
+  .inicio-practicas {
+    padding: 56px 24px;
+  }
+}
+
+@media (max-width: 460px) {
+  .inicio-hero {
+    min-height: 510px;
+    padding: 54px 22px;
+  }
+
+  .inicio-hero h1 {
+    font-size: 42px;
+  }
+
+  .inicio-intro {
+    font-size: 16px;
+  }
+
+  .inicio-hero-caption {
+    right: 22px;
+  }
+
+  .inicio-section-heading h2,
+  .inicio-cierre h2 {
+    font-size: 32px;
+  }
+
+  .inicio-actividad {
+    grid-template-columns: 1fr;
+  }
+
+  .inicio-actividad img {
+    aspect-ratio: 4 / 3;
+    min-height: 0;
+  }
+}

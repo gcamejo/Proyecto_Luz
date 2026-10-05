@@ -1,0 +1,241 @@
+{
+  "yoguinis": [
+    {
+      "nombre": "Nelly",
+      "apellido": "Castro",
+      "direccion": "nose",
+      "altura": "0000",
+      "telefono": "3489684103",
+      "fechaNacimiento": "1960-01-13",
+      "id": 1
+    },
+    {
+      "nombre": "Graciela",
+      "apellido": "Guerrero",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489697511",
+      "fechaNacimiento": "1964-10-22",
+      "id": 2
+    },
+    {
+      "nombre": "Abril",
+      "apellido": "Bianchi",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489485054",
+      "fechaNacimiento": "",
+      "id": 3
+    },
+    {
+      "nombre": "Yanina",
+      "apellido": "Sanchez",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489567199",
+      "fechaNacimiento": "1978-04-06",
+      "id": 4
+    },
+    {
+      "nombre": "Valeria",
+      "apellido": "Pisurnia",
+      "direccion": "",
+      "altura": "",
+      "telefono": "",
+      "fechaNacimiento": "",
+      "id": 5
+    },
+    {
+      "nombre": "Natalia",
+      "apellido": "Galeano",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489638385",
+      "fechaNacimiento": "",
+      "id": 6
+    },
+    {
+      "nombre": "Ivana",
+      "apellido": "Montaña",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489618395",
+      "fechaNacimiento": "1973-12-18",
+      "id": 7
+    },
+    {
+      "nombre": "Merlina",
+      "apellido": "Auer",
+      "direccion": "",
+      "altura": "",
+      "telefono": "1155702345",
+      "fechaNacimiento": "",
+      "id": 8
+    },
+    {
+      "nombre": "Mirian",
+      "apellido": "Moreira",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-624200",
+      "fechaNacimiento": "1977-11-20",
+      "id": 9
+    },
+    {
+      "nombre": "Sofia",
+      "apellido": "Fernandez",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-340316",
+      "fechaNacimiento": "",
+      "id": 11
+    },
+    {
+      "nombre": "Manuela",
+      "apellido": "Perez",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-538645",
+      "fechaNacimiento": "",
+      "id": 12
+    },
+    {
+      "nombre": "Paola",
+      "apellido": "Garcia",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-351386",
+      "fechaNacimiento": "",
+      "id": 13
+    },
+    {
+      "nombre": "Mariana",
+      "apellido": "Churrarin",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-353307",
+      "fechaNacimiento": "1970-06-08",
+      "id": 14
+    },
+    {
+      "nombre": "Valeria",
+      "apellido": "Chamorro",
+      "direccion": "",
+      "altura": "",
+      "telefono": "11-68652312",
+      "fechaNacimiento": "1985-08-30",
+      "id": 15
+    },
+    {
+      "nombre": "Luciana",
+      "apellido": "Notaliberto",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-538626",
+      "fechaNacimiento": "1982-03-24",
+      "id": 16
+    },
+    {
+      "nombre": "Nancy",
+      "apellido": "Bianchi",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-638427",
+      "fechaNacimiento": "",
+      "id": 17
+    },
+    {
+      "nombre": "Marisa",
+      "apellido": "Alvarez",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-567083",
+      "fechaNacimiento": "",
+      "id": 18
+    },
+    {
+      "nombre": "Rosana",
+      "apellido": "Ramirez",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-368162",
+      "fechaNacimiento": "",
+      "id": 19
+    },
+    {
+      "nombre": "Mariana",
+      "apellido": "Moritan",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-577419",
+      "fechaNacimiento": "",
+      "id": 20
+    },
+    {
+      "nombre": "Julieta",
+      "apellido": "Escobar",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-429037",
+      "fechaNacimiento": "1981-08-11",
+      "id": 21
+    },
+    {
+      "nombre": "Melisa",
+      "apellido": "Alonso",
+      "direccion": "",
+      "altura": "",
+      "telefono": "3489-687156",
+      "fechaNacimiento": "",
+      "id": 22
+    }
+  ],
+  "turnos": [],
+  "servicios": [
+    {
+      "servicio": "Yoga",
+      "id": 1
+    },
+    {
+      "servicio": "Cuencoterapia",
+      "id": 2
+    },
+    {
+      "servicio": "Meditacion",
+      "id": 3
+    },
+    {
+      "servicio": "Ceremonia",
+      "id": 4
+    }
+  ],
+  "horarios": [
+    {
+      "horario": "08:00",
+      "id": 1
+    },
+    {
+      "horario": "09:00",
+      "id": 2
+    },
+    {
+      "horario": "15:00",
+      "id": 3
+    },
+    {
+      "horario": "18:00",
+      "id": 4
+    },
+    {
+      "horario": "19:00",
+      "id": 5
+    }
+  ],
+  "usuarios": [
+    {
+      "email": "gustavo@hotmail.com",
+      "password": "password",
+      "id": 1
+    }
+  ]
+}

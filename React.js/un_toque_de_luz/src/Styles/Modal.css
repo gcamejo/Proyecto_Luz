@@ -1,0 +1,8 @@
+.modal-header{
+    display: flex;
+    background-color: rgba(240, 230, 93, 0.932);
+    font-family: cursive, Arial, Helvetica, sans-serif ;
+    font-weight: normal;
+    text-align: center;
+
+}

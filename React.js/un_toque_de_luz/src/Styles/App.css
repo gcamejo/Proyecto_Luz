@@ -1,0 +1,245 @@
+
+html,body {
+  min-height: 100%;
+  margin: 0;
+}
+
+body{
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+header {
+  padding: 0;
+}
+
+main {
+  flex: 1;
+  padding: 20px;
+  background-color: rgb(218, 215, 215);
+  /* background-image: url('../public/img/Logo-gota-de-Agua.jpg'); */
+  
+  
+}
+
+footer {
+  padding: 10px;
+  font-family: 'Trebuchet MS', sans-serif;
+  text-align: left;
+  background-color: #315344;
+  color: #f7f5ed;
+}
+
+.footer{
+  text-decoration-color: white;
+}
+
+.fondoCrearTurno{
+  height: 100vh;
+  width: 100vw;
+  background-image: url('/img/fondo_1.jpg');
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  
+  
+}
+
+.formCrearTurno{
+width: 25%;
+margin: auto;
+background-color: transparent;
+border: solid #aa7ba8;
+border-radius: 15px;
+padding: 10px;
+
+
+}
+
+.login-page {
+  display: grid;
+  min-height: 520px;
+  place-items: center;
+  margin: -20px;
+  padding: 48px 20px;
+  background: linear-gradient(120deg, rgba(29, 58, 45, .82), rgba(55, 76, 59, .34)), url('/img/fondo_1.jpg') center / cover;
+}
+
+.form-login {
+  width: min(100%, 440px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .72);
+  border-radius: 5px;
+  background: #fffdf8;
+  box-shadow: 0 18px 55px rgba(15, 34, 24, .28);
+}
+
+.tituloLogin {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 25px 30px 22px;
+  border-bottom: 1px solid #e5e6dc;
+  background: #f2f4ec;
+}
+
+.tituloLogin img {
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.login-kicker {
+  margin: 0 0 5px;
+  color: #52745d;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.tituloLogin h1 {
+  margin: 0;
+  color: #263630;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 29px;
+  font-weight: 400;
+}
+
+.form-login-int {
+  display: flex;
+  flex-direction: column;
+  padding: 26px 30px 30px;
+  text-align: left;
+}
+
+.form-login-int .form-label {
+  margin: 0 0 7px;
+  color: #37483d;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form-login-int .form-control {
+  min-height: 46px;
+  margin-bottom: 18px;
+  border-color: #ccd4c9;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.form-login-int .form-control:focus {
+  border-color: #52745d;
+  box-shadow: 0 0 0 3px rgba(82, 116, 93, .16);
+}
+
+.login-message {
+  margin: 0 0 16px;
+  color: #9b3027;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 14px;
+}
+
+.login-submit {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 3px;
+  color: #fff;
+  background: #41664e;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.login-submit:hover:not(:disabled),
+.login-submit:focus-visible {
+  background: #315344;
+}
+
+.login-submit:disabled {
+  cursor: wait;
+  opacity: .8;
+}
+
+.login-register {
+  margin: 19px 0 0;
+  color: #59635c;
+  font-family: 'Trebuchet MS', sans-serif;
+  font-size: 14px;
+  text-align: center;
+}
+
+.login-register a {
+  color: #315344;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .form-login {
+    width: min(100%, 390px);
+  }
+
+  .tituloLogin {
+    padding: 22px;
+  }
+
+  .form-login-int {
+    padding: 23px 22px 25px;
+  }
+}
+
+.form-general{
+  min-width: fit-content;
+  min-height: fit-content;
+  margin-top: 5%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: start;
+  border-radius: 15px;
+  border: 1px solid white;
+  box-shadow: 0 0 40px;
+
+}
+
+.titulo-general{
+    width: 100%;
+    height: 100%;
+    border-radius: 15px 15px 0 0;
+    border-bottom: 1px solid black;
+    background-color: rgb(228, 253, 233);
+    text-align: center;
+    justify-content: center;
+    font-family: cursive, Arial, Helvetica, sans-serif ;
+    font-weight: normal;
+
+}
+
+.card-rutaNoValida{
+  width: 20%;
+  height: 20%;
+  min-width: fit-content;
+  min-height: fit-content;
+  margin-top: 5%;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  border-radius: 15px;
+  border: 1px solid white;
+  box-shadow: 0 0 40px;
+
+}
+
+.modal-header{
+  display: flex;
+  background-color: rgba(240, 230, 93, 0.932);
+  font-family: cursive, Arial, Helvetica, sans-serif ;
+  font-weight: normal;
+  text-align: center;
+
+}

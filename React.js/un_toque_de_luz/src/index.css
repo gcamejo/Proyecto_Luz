@@ -1,0 +1,13 @@
+html {
+    height: 100vh;
+  }
+  
+  body{
+    
+    display: flex;
+    flex: 1;
+    height: 100%;
+    background-color: #d0d3ba;
+    
+    
+  }

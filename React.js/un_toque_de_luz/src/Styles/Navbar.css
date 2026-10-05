@@ -1,0 +1,28 @@
+.navbar {
+    display: flex;
+    background-color: #f7f5ed;
+    border-bottom: 1px solid #e3e7dd;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.navbar .navbar-brand,
+.navbar .nav-link {
+    color: #315344;
+}
+
+.navbar .nav-link:hover,
+.navbar .navbar-brand:hover {
+    color: #52745d;
+}
+
+@media (max-width: 991px) {
+    .navbar-collapse {
+        padding-top: 12px;
+    }
+
+    .navbar .btn {
+        margin-top: 8px;
+    }
+}

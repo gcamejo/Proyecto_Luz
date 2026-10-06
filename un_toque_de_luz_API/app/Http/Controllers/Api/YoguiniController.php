@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Yoguini;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class YoguiniController extends Controller
 {
@@ -16,9 +17,7 @@ class YoguiniController extends Controller
      */
     public function index()
     {
-        $Yoguinis = Yoguini::all();
-               
-        return $Yoguinis;
+        return Yoguini::all()->makeHidden(['password']);
     }
 
     /**
@@ -39,18 +38,23 @@ class YoguiniController extends Controller
      */
     public function store(Request $request)
     {
-        $Yoguini = new Yoguini;
-        $Yoguini->nombre = $request->nombre;
-        $Yoguini->apellido = $request->apellido;
-        $Yoguini->direccion = $request->direccion;
-        $Yoguini->numero = $request->numero;
-        $Yoguini->telefono = $request->telefono;
-        $Yoguini->fechaNacimiento = $request->fechaNacimiento;
-        $Yoguini->email = $request->email;
-        $Yoguini->password = Hash::make($request->password) ;
-        $Yoguini->perfil = $request->perfil;
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
+            'direccion' => 'required|string|max:255',
+            'numero' => 'required|integer|min:0',
+            'telefono' => 'required|string|max:255',
+            'fechaNacimiento' => 'required|date',
+            'email' => 'required|email|max:255|unique:yoguinis,email',
+            'password' => 'required|string|min:8',
+        ]);
 
+        $Yoguini = new Yoguini($validated);
+        $Yoguini->password = Hash::make($validated['password']);
+        $Yoguini->perfil = 'user';
         $Yoguini->save();
+
+        return response()->json($Yoguini->makeHidden(['password']), 201);
     }
 
     /**
@@ -61,7 +65,7 @@ class YoguiniController extends Controller
      */
     public function show($id)
     {
-        //
+        return Yoguini::findOrFail($id)->makeHidden(['password']);
     }
 
     /**
@@ -72,8 +76,7 @@ class YoguiniController extends Controller
      */
     public function edit($id)
     {
-        $Yoguini = Yoguini::find($id);
-        return $Yoguini;
+        return Yoguini::findOrFail($id)->makeHidden(['password']);
     }
 
     /**
@@ -85,18 +88,21 @@ class YoguiniController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $Yoguini = Yoguini::find($id);
-        $Yoguini->nombre = $request->nombre;
-        $Yoguini->apellido = $request->apellido;
-        $Yoguini->direccion = $request->direccion;
-        $Yoguini->numero = $request->numero;
-        $Yoguini->telefono = $request->telefono;
-        $Yoguini->fechaNacimiento = $request->fechaNacimiento;
-        $Yoguini->email = $request->email;
-        $Yoguini->password = $request->password;
-        
+        $Yoguini = Yoguini::findOrFail($id);
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
+            'direccion' => 'required|string|max:255',
+            'numero' => 'required|integer|min:0',
+            'telefono' => 'required|string|max:255',
+            'fechaNacimiento' => 'required|date',
+            'email' => ['required', 'email', 'max:255', Rule::unique('yoguinis', 'email')->ignore($Yoguini->id)],
+        ]);
 
+        $Yoguini->fill($validated);
         $Yoguini->save();
+
+        return response()->json($Yoguini->makeHidden(['password']));
     }
 
     /**
@@ -107,8 +113,10 @@ class YoguiniController extends Controller
      */
     public function destroy($id)
     {
-        $Yoguini = Yoguini::destroy($id);
-        return 200;
+        $Yoguini = Yoguini::findOrFail($id);
+        $Yoguini->delete();
+
+        return response()->json(['message' => 'Ficha eliminada correctamente.']);
     }
 
     public function login(Request $request)

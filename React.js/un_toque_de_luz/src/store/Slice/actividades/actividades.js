@@ -7,7 +7,9 @@ export const actividadesSlice = createSlice({
     name:'actividades',
     initialState:{
         actividades:[],
-        actividad:[]
+        actividad:[],
+        isLoading:true,
+        error:null
         
         
     },
@@ -20,45 +22,72 @@ export const actividadesSlice = createSlice({
         },
         patchActividad:(estado,action)=>{
             estado.actividad = action.payload
+        },
+        replaceActividad:(estado,action)=>{
+            estado.actividades = estado.actividades.map(actividad =>
+                String(actividad.id) === String(action.payload.id) ? {...actividad, ...action.payload} : actividad
+            )
+        },
+        removeActividad:(estado,action)=>{
+            estado.actividades = estado.actividades.filter(actividad => String(actividad.id) !== String(action.payload))
+        },
+        setActividadesLoading:(estado,action)=>{
+            estado.isLoading = action.payload
+        },
+        setActividadesError:(estado,action)=>{
+            estado.error = action.payload
         }
         
     }
 })
 
-export const { setActividades, setActividad, patchActividad} = actividadesSlice.actions
+export const { setActividades, setActividad, patchActividad, replaceActividad, removeActividad, setActividadesLoading, setActividadesError} = actividadesSlice.actions
 
 export default actividadesSlice.reducer
 
 export const getActividades = () => (dispatch) => {
-    axios.get(apiEndPoint)
+    dispatch(setActividadesLoading(true))
+    dispatch(setActividadesError(null))
+    return axios.get(apiEndPoint)
         .then(res => {
             dispatch(setActividades(res.data))
         })
-        
+        .catch(error => {
+            dispatch(setActividadesError(error.response?.data?.message || error.message || 'No se pudieron cargar las actividades.'))
+        })
+        .finally(() => {
+            dispatch(setActividadesLoading(false))
+        })
 }
 
 export const getActividad = (id) => (dispatch) => {
-    axios.get(apiEndPoint + id)
+    return axios.get(apiEndPoint + id)
         .then(res => {
             dispatch(setActividad(res.data))
+            return res.data
         })
-        
 }
 
 export const updateActividad = (id, values) => (dispatch) => {
-    axios.patch(apiEndPoint + id, values)
+    return axios.patch(apiEndPoint + id, values)
         .then(res=>{
-            dispatch(patchActividad(res.data))
+            const responseValues = res.data && typeof res.data === 'object' ? res.data : {}
+            const actividadActualizada = {...values, ...responseValues, id}
+            dispatch(patchActividad(actividadActualizada))
+            dispatch(replaceActividad(actividadActualizada))
+            return res
         })
 }
 
 export const createActividad = (values)  => {
-    axios.post(apiEndPoint, values)
+    return axios.post(apiEndPoint, values)
        
 }
 
-export const deleteActividad = (id)  => {
-    axios.delete(apiEndPoint + id)
-    .then(res=>console.log(res.data))
-       
+export const deleteActividad = (id) => (dispatch) => {
+    return axios.delete(apiEndPoint + id)
+        .then(res => {
+            dispatch(removeActividad(id))
+            return res
+        })
 }

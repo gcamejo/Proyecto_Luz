@@ -13,17 +13,21 @@ class CreateYoguinisTable extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('yoguinis')) {
+            return;
+        }
+
         Schema::create('yoguinis', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
             $table->string('apellido');
             $table->string('direccion');
-            $table->int('numero');
+            $table->integer('numero');
             $table->string('telefono');
             $table->string('fechaNacimiento');
             $table->string('email');
             $table->string('password');
-            $table->int('perfil');
+            $table->integer('perfil');
             $table->timestamps();
         });
     }

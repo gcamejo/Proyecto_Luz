@@ -4,58 +4,67 @@ import { useNavigate, useParams } from 'react-router'
 import { Link } from 'react-router-dom'
 import { deleteFicha, getFicha } from '../store/Slice/Yoguinis/yoguinis'
 
+const errorMessage = error => {
+  const validationErrors = error.response?.data?.errors
+  return validationErrors ? Object.values(validationErrors).flat().join(' ') : error.response?.data?.message || error.message || 'No se pudo completar la solicitud.'
+}
+
 const FichaDelete = () => {
+  const { id } = useParams()
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const [ficha, setFicha] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState('')
 
-    const{id} = useParams()
-
-    const dispatch = useDispatch()
-
-    const {ficha} = useSelector(estado => estado.ficha)
-
-    const navigate = useNavigate()
-       
   useEffect(() => {
-    dispatch(getFicha(id))  
-  },[])
+    let active = true
+    dispatch(getFicha(id))
+      .then(record => { if (active) setFicha(record) })
+      .catch(requestError => { if (active) setError(errorMessage(requestError)) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [dispatch, id])
 
-
-  const borrar = (e) =>{
-    e.preventDefault()
-    deleteFicha(id)
-    navigate('/verFichas')
+  const handleDelete = async () => {
+    setDeleting(true)
+    setError('')
+    try {
+      await dispatch(deleteFicha(id))
+      navigate('/verFichas')
+    } catch (requestError) {
+      setError(errorMessage(requestError))
+      setDeleting(false)
+    }
   }
-  
-  
 
+  if (loading) return <p className="yoguini-message yoguini-page-status" role="status">Cargando ficha...</p>
 
   return (
-    <>
-        <div  className="card border-danger p-4 col-4 mx-auto shadow">
-            <div className="card text-bg-danger">
-                <div className="card-header-danger text-center">
-                    <h3>ATENCION!!</h3>
-                </div>
-            </div>
-                <div className="card-body text-danger">
-                    <h5 className="card-title">Esta por eliminar la Ficha de:</h5>
-                    <div className="card-body text-dark">
-                        <h6>{ficha.nombre +" "+ficha.apellido}</h6>
-                        <h6>Direccion: {ficha.direccion + " " + ficha.numero} </h6>
-                        <h6>Telefono: {ficha.telefono}</h6>
-                    </div>
-                        <div className="row">
-                            <div className="col">
-                                <button className="btn btn-danger mt-3 bt-sm" onClick={borrar}>Eliminar</button>
-                            </div>
-                            <div className="col">
-                                <Link className="btn btn-success mt-3 bt-sm" to={'/verFichas'}>Volver</Link>
-                            </div>
-                    </div>
-                </div>
-                
+    <section className="yoguini-form-page">
+      <div className="yoguini-form yoguini-delete-panel">
+        <header className="yoguini-form-heading">
+          <p className="yoguinis-eyebrow">Directorio de yoguinis</p>
+          <h1>Eliminar ficha</h1>
+        </header>
+        {error && <p className="yoguini-message yoguini-message-error" role="alert">{error}</p>}
+        {ficha && <div className="yoguini-dialog-person">
+          <strong>{ficha.nombre} {ficha.apellido}</strong>
+          <span>{ficha.direccion} {ficha.numero}</span>
+          <span>{ficha.telefono} · {ficha.email}</span>
+        </div>}
+        {!ficha && !error && <p className="yoguini-message">No se encontró la ficha solicitada.</p>}
+        {ficha && <p>Esta acción no se puede deshacer.</p>}
+        <div className="yoguini-form-actions">
+          {ficha && <button className="yoguini-button yoguini-button-danger" type="button" disabled={deleting} onClick={handleDelete}>
+            {deleting ? 'Eliminando...' : 'Eliminar ficha'}
+          </button>}
+          <Link className="yoguini-button yoguini-button-secondary" to="/verFichas">Volver al directorio</Link>
         </div>
-    </>
-    )
+      </div>
+    </section>
+  )
 }
 
 export default FichaDelete

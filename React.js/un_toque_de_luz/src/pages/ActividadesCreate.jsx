@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useForm } from '../hooks/useForm'
 
@@ -6,105 +6,126 @@ import '../Styles/Actividades.css'
 import UploadFile from '../components/UploadFile'
 import { Link } from 'react-router-dom'
 import { createActividad } from '../store/Slice/actividades/actividades'
+import { BsArrowLeft } from 'react-icons/bs'
 
 const ActividadesCreate = () => {
 
     
     const navigate = useNavigate()
 
-    const [values,handleInputChange] = useForm({
+    const [values,handleInputChange,setValues] = useForm({
         urlImagen:'',
         titulo:'',
         descripcion:'',
         horarios:''
       })
+    const [saving, setSaving] = useState(false)
+    const [saveError, setSaveError] = useState(null)
     
-    const {urlImagen, titulo, descripcion, horarios} = values
+    const {titulo, descripcion, horarios} = values
 
-    const handleSubmit = (e) =>{
+    const handleSubmit = async (e) =>{
         e.preventDefault()
-        createActividad(values)
-        navigate('/adminActividades')
+        if (saving) return
+        setSaving(true)
+        setSaveError(null)
+        try {
+          await createActividad(values)
+          navigate('/adminActividades')
+        } catch (error) {
+          setSaveError(error.response?.data?.message || error.message || 'No se pudo guardar la actividad.')
+        } finally {
+          setSaving(false)
+        }
       }
 
   return (
     <>
-    <div className='container-actividades'>
-        <div className='titulo-actividades'>
-          <h3>Editar Actividad</h3>
-        </div>
-        <div className='card'>
+    <section className='actividad-form-page'>
+      <header className='actividad-form-header'>
+        <p className='actividad-form-eyebrow'>Administración</p>
+        <h1>Nueva actividad</h1>
+        <p>Completá la información para publicarla en actividades.</p>
+      </header>
 
-          <div className="row g-0">
-            <div className="col-md-4">
-              
-                <UploadFile/>
-              
-            </div>
-            
-
-              <div className='col-md-8'>
-
-                    <div className='card-body' >
-                      <div className='card-title'>
-                        
-                        <label htmlFor="titulo" className="form-label">
-                          
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="titulo"
-                            name="titulo"
-                            value={titulo}
-                            onChange={handleInputChange}
-                            placeholder="Ingrese Titulo" />
-                        </label>
-                      </div>
-                
-                        <div className='card-contenido'>
-                          <div className='card-text'>
-                            <label htmlFor="descripcion" className="form-label">
-                                Descripcion
-                              <textarea
-                                  type="text"
-                                  className="form-control"
-                                  id="descripcion"
-                                  name="descripcion"
-                                  value={descripcion}
-                                  onChange={handleInputChange}
-                                  placeholder="Ingrese Descripcion" />
-                            </label>
-                          </div>
-                          <div className='card-text'>
-                            <label htmlFor="horarios" className="form-label">
-                              Horarios
-                              <input
-                                type="text"
-                                className="form-control"
-                                id="horarios"
-                                name="horarios"
-                                value={horarios}
-                                onChange={handleInputChange}
-                                placeholder="Ingrese Horarios" />
-                            </label>
-                          </div>  
-                        </div>
-                    </div>
-                  
-                  
-
-                    <div className="container-button">
-                      <div className='card-button'>
-                        <button className="btn btn-outline-primary mt-3" onClick={handleSubmit}>Guardar</button>
-                        <Link className="btn btn-outline-secondary mt-3" to={'/adminActividades'}>Volver</Link>
-                      </div>
-                    </div>
-
+      <form className='actividad-form' onSubmit={handleSubmit}>
+        <div className='actividad-form-layout'>
+          <section className='actividad-form-photo' aria-labelledby='actividad-photo-heading'>
+            <div className='actividad-form-section-title'>
+              <span aria-hidden='true'>01</span>
+              <div>
+                <h2 id='actividad-photo-heading'>Foto de portada</h2>
+                <p>Opcional</p>
               </div>
+            </div>
+            <UploadFile onUpload={(filename) => setValues(current => ({...current, urlImagen: filename}))}/>
+          </section>
+
+          <div className='actividad-form-fields'>
+            <div className='actividad-form-section-title'>
+              <span aria-hidden='true'>02</span>
+              <div>
+                <h2>Datos de la actividad</h2>
+                <p>Los campos marcados con * son obligatorios.</p>
+              </div>
+            </div>
+
+            <div className='actividad-form-field'>
+              <label htmlFor='titulo'>Título *</label>
+              <input
+                type='text'
+                id='titulo'
+                name='titulo'
+                value={titulo}
+                onChange={handleInputChange}
+                placeholder='Ej.: Yoga suave'
+                maxLength={120}
+                required
+              />
+            </div>
+
+            <div className='actividad-form-field'>
+              <label htmlFor='descripcion'>Descripción *</label>
+              <textarea
+                id='descripcion'
+                name='descripcion'
+                value={descripcion}
+                onChange={handleInputChange}
+                placeholder='Contá brevemente en qué consiste la actividad'
+                rows={5}
+                required
+              />
+            </div>
+
+            <div className='actividad-form-field'>
+              <label htmlFor='horarios'>Horarios *</label>
+              <input
+                type='text'
+                id='horarios'
+                name='horarios'
+                value={horarios}
+                onChange={handleInputChange}
+                placeholder='Ej.: Martes y jueves, 18:00'
+                required
+              />
+            </div>
           </div>
-        
         </div>
-    </div>
+
+        <div className='actividad-form-footer'>
+          {saveError && <p className='actividad-form-error' role='alert'>{saveError}</p>}
+          <div className='actividad-form-actions'>
+            <Link className='actividad-form-cancel' to='/adminActividades'>
+              <BsArrowLeft aria-hidden='true' />
+              <span>Volver</span>
+            </Link>
+            <button className='actividad-form-submit' type='submit' disabled={saving}>
+              {saving ? 'Guardando...' : 'Guardar actividad'}
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
     </>
   )
 }

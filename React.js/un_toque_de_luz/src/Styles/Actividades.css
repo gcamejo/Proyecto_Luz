@@ -198,6 +198,526 @@
     font-family: 'Trebuchet MS', sans-serif;
 }
 
+.actividad-delete-overlay {
+    position: fixed;
+    z-index: 1050;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    overflow-y: auto;
+    padding: 24px;
+    background: rgba(28, 38, 32, .58);
+}
+
+.actividad-delete-dialog {
+    width: min(100%, 560px);
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    padding: 26px;
+    border: 1px solid #e1e3d9;
+    background: #fffdf7;
+    color: #263630;
+}
+
+.actividad-delete-dialog h2 {
+    margin: 0 0 20px;
+    font-size: 25px;
+    font-weight: 400;
+}
+
+.actividad-delete-details {
+    display: grid;
+    grid-template-columns: minmax(0, 140px) minmax(0, 1fr);
+    gap: 18px;
+    font-family: 'Trebuchet MS', sans-serif;
+}
+
+.actividad-delete-details img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+.actividad-delete-details h3 {
+    margin: 0 0 8px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 20px;
+}
+
+.actividad-delete-details p {
+    margin: 0 0 10px;
+    color: #58635c;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.actividad-delete-error,
+.actividad-delete-status,
+.actividad-form-status,
+.actividad-form-load-error p,
+.actividad-edit-filename {
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.actividad-delete-error,
+.actividad-form-load-error p {
+    color: #963d35;
+}
+
+.actividad-delete-status,
+.actividad-form-status,
+.actividad-edit-filename {
+    color: #58635c;
+}
+
+.actividad-delete-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.actividad-delete-confirm {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    border: 1px solid #963d35;
+    border-radius: 2px;
+    color: #fff;
+    background: #963d35;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.actividad-delete-confirm:hover:not(:disabled),
+.actividad-delete-confirm:focus-visible {
+    border-color: #7e302a;
+    background: #7e302a;
+}
+
+.actividad-delete-confirm:disabled,
+.actividad-delete-actions .actividad-form-cancel:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+.actividad-form-status,
+.actividad-form-load-error {
+    width: min(100%, 1120px);
+    margin: 0 auto;
+}
+
+.actividad-form-load-error {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+    padding: 24px;
+    border: 1px solid #e1e3d9;
+    background: #fff;
+}
+
+.actividad-form-load-error p {
+    margin: 0;
+}
+
+.actividad-edit-image {
+    display: block;
+    width: 100%;
+    max-height: 280px;
+    margin-bottom: 10px;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: #e8ede4;
+}
+
+.actividad-edit-filename {
+    overflow-wrap: anywhere;
+    margin: 0 0 14px;
+    color: #385b45;
+}
+
+.actividad-form-page {
+    min-height: 60vh;
+    margin: -20px;
+    padding: 56px 32px 72px;
+    color: #263630;
+    background: #fbf8f0;
+}
+
+.actividad-form-header,
+.actividad-form {
+    width: min(100%, 1120px);
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.actividad-form-header {
+    margin-bottom: 28px;
+}
+
+.actividad-form-eyebrow {
+    margin: 0 0 8px;
+    color: #52745d;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.actividad-form-header h1 {
+    margin: 0;
+    font-size: 40px;
+    font-weight: 400;
+    line-height: 1.15;
+}
+
+.actividad-form-header > p:last-child {
+    margin: 10px 0 0;
+    color: #58635c;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.actividad-form {
+    overflow: hidden;
+    border: 1px solid #e1e3d9;
+    background: #fff;
+}
+
+.actividad-form-layout {
+    display: grid;
+    grid-template-columns: minmax(250px, .8fr) minmax(0, 1.5fr);
+}
+
+.actividad-form-photo,
+.actividad-form-fields {
+    min-width: 0;
+    padding: 30px;
+}
+
+.actividad-form-photo {
+    border-right: 1px solid #e5e7de;
+    background: #f4f5ef;
+}
+
+.actividad-form-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.actividad-form-section-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    margin-bottom: 24px;
+}
+
+.actividad-form-section-title > span {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    place-items: center;
+    border: 1px solid #c9d6c9;
+    color: #385b45;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.actividad-form-section-title h2 {
+    margin: 0;
+    color: #263630;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: 1.3;
+}
+
+.actividad-form-section-title p {
+    margin: 5px 0 0;
+    color: #647068;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.actividad-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.actividad-form-field label,
+.actividad-upload-label {
+    color: #37483d;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.actividad-form-field input,
+.actividad-form-field textarea,
+.actividad-upload-input {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid #ccd4c9;
+    border-radius: 2px;
+    color: #263630;
+    background: #fff;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+}
+
+.actividad-form-field input {
+    min-height: 46px;
+    padding: 10px 12px;
+}
+
+.actividad-form-field textarea {
+    min-height: 130px;
+    padding: 11px 12px;
+    resize: vertical;
+}
+
+.actividad-form-field input:focus,
+.actividad-form-field textarea:focus,
+.actividad-upload-input:focus-visible {
+    border-color: #52745d;
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(82, 116, 93, .15);
+}
+
+.actividad-form-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e5e7de;
+    background: #fbfcf8;
+}
+
+.actividad-form-error,
+.actividad-upload-error {
+    margin: 0 0 14px;
+    color: #963d35;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+}
+
+.actividad-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.actividad-form-cancel,
+.actividad-form-submit,
+.actividad-upload-button {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 0 16px;
+    border: 1px solid #52745d;
+    border-radius: 2px;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+
+.actividad-form-cancel {
+    color: #385b45;
+    background: #fff;
+}
+
+.actividad-form-cancel:hover,
+.actividad-form-cancel:focus-visible {
+    color: #fff;
+    background: #385b45;
+}
+
+.actividad-form-submit,
+.actividad-upload-button {
+    color: #fff;
+    background: #41664e;
+    cursor: pointer;
+}
+
+.actividad-form-submit:hover:not(:disabled),
+.actividad-form-submit:focus-visible,
+.actividad-upload-button:hover:not(:disabled),
+.actividad-upload-button:focus-visible {
+    border-color: #315344;
+    background: #315344;
+}
+
+.actividad-form-submit:disabled,
+.actividad-upload-button:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+.actividad-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.actividad-upload-input {
+    padding: 8px;
+    font-size: 13px;
+}
+
+.actividad-upload-input::file-selector-button {
+    margin: -2px 10px -2px -2px;
+    padding: 7px 9px;
+    border: 0;
+    color: #385b45;
+    background: #e8ede4;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.actividad-upload-success {
+    width: 100%;
+    overflow-wrap: anywhere;
+    margin: 0;
+    color: #385b45;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.actividad-upload-progress {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #58635c;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 13px;
+}
+
+.actividad-upload-progress .text-center {
+    margin: 0;
+}
+
+@media (max-width: 760px) {
+    .actividad-form-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .actividad-form-photo {
+        border-right: 0;
+        border-bottom: 1px solid #e5e7de;
+    }
+}
+
+.actividades-loading {
+    max-width: 1240px;
+    margin: 0 auto;
+}
+
+.actividades-loading-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    color: #385b45;
+    font-family: 'Trebuchet MS', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.actividades-loading-indicator {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    border: 2px solid #cdd9cd;
+    border-top-color: #52745d;
+    border-radius: 50%;
+    animation: actividades-loading-spin .8s linear infinite;
+}
+
+.actividades-loading-grid {
+    align-items: stretch;
+}
+
+.actividades-loading-card {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid #e5e4d9;
+    background: #fff;
+}
+
+.actividades-skeleton {
+    background: linear-gradient(100deg, #e7ebe3 20%, #f4f5ef 45%, #e7ebe3 70%);
+    background-size: 220% 100%;
+    animation: actividades-skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.actividades-skeleton-image {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+}
+
+.actividades-loading-content {
+    display: grid;
+    gap: 12px;
+    padding: 20px;
+}
+
+.actividades-skeleton-title {
+    width: 62%;
+    height: 25px;
+    margin-bottom: 2px;
+}
+
+.actividades-skeleton-line {
+    width: 100%;
+    height: 10px;
+}
+
+.actividades-skeleton-line-short {
+    width: 74%;
+}
+
+.actividades-skeleton-schedule {
+    width: 48%;
+    height: 34px;
+    margin-top: 8px;
+}
+
+@keyframes actividades-loading-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes actividades-skeleton-shimmer {
+    to {
+        background-position: -220% 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .actividades-loading-indicator,
+    .actividades-skeleton {
+        animation: none;
+    }
+}
+
 @media (max-width: 900px) {
     .actividades-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -226,6 +746,33 @@
     }
 
     .actividades-create {
+        width: 100%;
+    }
+
+    .actividad-form-page {
+        padding: 42px 18px 52px;
+    }
+
+    .actividad-form-header h1 {
+        font-size: 34px;
+    }
+
+    .actividad-form-photo,
+    .actividad-form-fields {
+        padding: 23px 20px;
+    }
+
+    .actividad-form-footer {
+        padding: 18px 20px;
+    }
+
+    .actividad-form-actions {
+        align-items: stretch;
+        flex-direction: column-reverse;
+    }
+
+    .actividad-form-cancel,
+    .actividad-form-submit {
         width: 100%;
     }
 }

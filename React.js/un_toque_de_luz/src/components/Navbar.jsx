@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 
 
 
@@ -29,12 +29,12 @@ useEffect(()=>{
   if (usuarioLogueado == null) {
     setNavegar("/cargarFicha")
     setMensaje('Registrarse')
-    setClaseButton('btn btn-primary')    
+    setClaseButton('site-nav-session site-nav-session-login')    
     setMensajeButton('Iniciar Sesion')
   }else{
     setNavegar("/")
     setMensaje('Hola ' + usuarioLogueado.nombre )
-    setClaseButton('btn btn-success')    
+    setClaseButton('site-nav-session site-nav-session-logout')    
     setMensajeButton('Cerrar Sesion')
     switch (usuarioLogueado.perfil) {
       case 'user':
@@ -63,29 +63,32 @@ const handleSubmit = (e) => {
 return (
     
        
-    <nav className="navbar navbar-expand-lg navbar-light">
+    <nav className="navbar navbar-expand-lg site-navbar">
         <div className="container-fluid">
-              <a className="navbar-brand" href="#">
-                <img style={{borderRadius: 35}} src="/img/logo_principal.jpg"  alt="logo" width="60" height="60" />
-              </a>
-              <Link className="navbar-brand" to="/">Inicio</Link>
-          <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Abrir navegación">
+              <Link className="navbar-brand site-nav-identity" to="/" aria-label="Un toque de luz, inicio">
+                <img src="/img/logo_principal.jpg" alt="" width="48" height="48" />
+                <span>Un toque de luz</span>
+              </Link>
+          <button className="navbar-toggler site-nav-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Abrir navegación">
             <span className="navbar-toggler-icon"></span>
           </button>
           <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+            <ul className="navbar-nav site-nav-links">
                 <li className="nav-item">
-                  <Link className="nav-link active" aria-current="page" to="/actividades">Actividades</Link>
+                  <NavLink className={({isActive}) => `nav-link${isActive ? ' active' : ''}`} to="/">Inicio</NavLink>
+                </li>
+                <li className="nav-item">
+                  <NavLink className={({isActive}) => `nav-link${isActive ? ' active' : ''}`} to="/actividades">Actividades</NavLink>
                 </li>
                 {user ? <NavbarUser/> : <li></li>}
                 {admin ? <NavbarAdmin/> : <li></li>}
             </ul>
-            <ul className="navbar-nav">
+            <ul className="navbar-nav site-nav-account">
                   <li className="nav-item">
-                    <Link className="nav-link active"  to={navegar}>{mensaje}</Link>
+                    <Link className="nav-link site-nav-greeting" to={navegar}>{mensaje}</Link>
                   </li>
                   <li className="nav-item">
-                     <button className={claseButton} onClick={handleSubmit}>{mensajeButton}</button>
+                     <button type="button" className={claseButton} onClick={handleSubmit}>{mensajeButton}</button>
                   </li>
             </ul>
           </div>

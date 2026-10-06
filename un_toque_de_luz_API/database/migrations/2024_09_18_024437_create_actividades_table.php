@@ -13,9 +13,13 @@ class CreateActividadesTable extends Migration
      */
     public function up()
     {
+        if (Schema::hasTable('actividades')) {
+            return;
+        }
+
         Schema::create('actividades', function (Blueprint $table) {
             $table->id();
-            $table->string('urlImmagen');
+            $table->string('urlImagen');
             $table->string('titulo');
             $table->string('descripcion');
             $table->string('horarios');

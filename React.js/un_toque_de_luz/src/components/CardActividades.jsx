@@ -1,46 +1,40 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { BsPencilSquare, BsTrash, BsWhatsapp } from 'react-icons/bs'
-import { Link, Route, useNavigate } from 'react-router-dom'
-import { deleteActividad, getActividad } from '../store/Slice/actividades/actividades'
+import { Link } from 'react-router-dom'
+import { deleteActividad } from '../store/Slice/actividades/actividades'
 
 import '../Styles/Actividades.css'
 
-import { useDispatch, useSelector } from 'react-redux'
+import { useDispatch } from 'react-redux'
 
 
 
 const CardActividades = ({id, name, tit, des, hor, edit}) => {
 
 const dispatch = useDispatch()
-
-const modalId = `actividad-${id}-modal`
-const modalLabelId = `actividad-${id}-modal-label`
-
-const {actividad} = useSelector(estado => estado.actividad)
+const [confirmingDelete, setConfirmingDelete] = useState(false)
+const [deleting, setDeleting] = useState(false)
+const [deleteError, setDeleteError] = useState(null)
 
 const urlImagen = 'http://localhost:8000/storage/img/' + name
 
-const navigate = useNavigate()
-
-const borrarActividad = (e) =>{
+const borrarActividad = async (e) =>{
   e.preventDefault()
+  if (deleting) return
+  setDeleting(true)
+  setDeleteError(null)
   try {
-    deleteActividad(actividad.id)
+    await dispatch(deleteActividad(id))
   } catch (error) {
-  console.error(error)  
+    setDeleteError(error.response?.data?.message || error.message || 'No se pudo eliminar la actividad.')
+    setDeleting(false)
   }
-  navigate('/adminActividades')
-  
-}
-
-const handleShow = (id) => {
-  dispatch(getActividad(id))
 }
 
   return (
     <>
       <article className='actividades-card'>
-        <img className='actividades-image' src={urlImagen} alt={`Imagen de la actividad ${tit}`} />
+        <img className='actividades-image' src={urlImagen} alt={`Imagen de la actividad ${tit}`} loading='lazy' decoding='async' />
         <div className='actividades-card-content'>
           <h2 className='actividades-card-title'>{tit}</h2>
           <p className='actividades-description'>{des}</p>
@@ -54,7 +48,7 @@ const handleShow = (id) => {
                 <BsPencilSquare aria-hidden='true' />
                 <span>Editar</span>
               </Link>
-              <button className='actividades-action actividades-action-delete' type='button' data-bs-toggle='modal' data-bs-target={`#${modalId}`} onClick={() => handleShow(id)} aria-label={`Eliminar actividad ${tit}`}>
+              <button className='actividades-action actividades-action-delete' type='button' onClick={() => {setDeleteError(null); setConfirmingDelete(true)}} aria-label={`Eliminar actividad ${tit}`}>
                 <BsTrash aria-hidden='true' />
                 <span>Eliminar</span>
               </button>
@@ -65,27 +59,27 @@ const handleShow = (id) => {
           </div>
         </div>
       </article>
-      <div className='modal fade' id={modalId} tabIndex='-1' aria-labelledby={modalLabelId} aria-hidden='true'>
-              <div className="modal-dialog">
-                  <div className="modal-content">
-                  <div className="modal-header">
-                      <h2 className="modal-title fs-5" id={modalLabelId}>Atención</h2>
-                      <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                  </div>
-                  <div className="modal-body">
-                          <h6>Esta por borrar la actividad:</h6>
-                          <h6>{actividad.titulo}</h6>
-                          <h6>{actividad.descripcion} </h6>
-                          <h6>{actividad.horarios}</h6>
-                          
-                  </div>
-                  <div className="modal-footer">
-                      <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
-                      <button type="button" className="btn btn-danger" data-bs-dismiss="modal" onClick={borrarActividad}>Borrar</button>
-                  </div>
-                  </div>
-              </div>    
+      {confirmingDelete && <div className='actividad-delete-overlay'>
+        <section className='actividad-delete-dialog' role='dialog' aria-modal='true' aria-labelledby={`actividad-${id}-delete-title`} aria-describedby={`actividad-${id}-delete-description`}>
+          <h2 id={`actividad-${id}-delete-title`}>Eliminar actividad</h2>
+          <div className='actividad-delete-details'>
+            {name && <img src={urlImagen} alt={`Imagen de la actividad ${tit}`} />}
+            <div>
+              <h3>{tit}</h3>
+              <p id={`actividad-${id}-delete-description`}>{des}</p>
+              <p><strong>Horarios:</strong> {hor}</p>
             </div>
+          </div>
+          {deleteError && <p className='actividad-delete-error' role='alert'>{deleteError}</p>}
+          {deleting && <p className='actividad-delete-status' role='status'>Eliminando actividad...</p>}
+          <div className='actividad-delete-actions'>
+            <button type='button' className='actividad-form-cancel' onClick={() => setConfirmingDelete(false)} disabled={deleting} autoFocus>Cancelar</button>
+            <button type='button' className='actividad-delete-confirm' onClick={borrarActividad} disabled={deleting}>
+              {deleting ? 'Eliminando...' : 'Confirmar eliminación'}
+            </button>
+          </div>
+        </section>
+      </div>}
       
     </>
   )

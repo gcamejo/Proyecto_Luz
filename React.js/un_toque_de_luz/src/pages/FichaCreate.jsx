@@ -1,191 +1,99 @@
-import React from 'react'
-import { useNavigate } from 'react-router'
-import { Link } from 'react-router-dom'
-import { useForm } from '../hooks/useForm'
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
 import { createFicha } from '../store/Slice/Yoguinis/yoguinis'
+import '../Styles/Yoguinis.css'
 
-
-
-
-const FichaCreate = () => {
-
-  const navigate = useNavigate()
-
-  var repassword = ''
-
-  const [values, handleInputChange] = useForm({
-    nombre:'',
-    apellido:'',
-    direccion:'',
-    numero:'',
-    telefono:'',
-    fechaNacimiento:'',
-    email:'',
-    password:'',
-    perfil:''
-    
-  })
-
-  const handleSubmit = (e) =>{
-    e.preventDefault()
-    createFicha(values)
-    navigate('/verFichas')
-  }
-
-  const {nombre, apellido, direccion, numero, telefono, fechaNacimiento, email, password, perfil} = values
-  
-
-  return (
-    <>
-    
-    
-        <form className="form-login">
-            <div className="tituloLogin">
-              <img style={{borderRadius: 35}} src="/img/logo_principal.jpg"  alt="logo" width="60" height="60" />
-              <h3>Registro Yoguini</h3>
-            </div>
-            <div className="row">
-              <div className="col">
-                <label htmlFor="nombre" className="form-label">
-                  Nombre
-                <input
-                  type="text"
-                  className="form-control"
-                  id="nombre "
-                  name="nombre"
-                  value={nombre}
-                  onChange={handleInputChange}
-                  placeholder="Ingrese Nombre" />
-                </label>
-              </div>
-              <div className="col">
-                <label htmlFor="apellido" className="form-label">
-                  Apellido
-                <input
-                  type="text"
-                  className="form-control"
-                  id="apellido "
-                  name="apellido"
-                  value={apellido}
-                  onChange={handleInputChange}
-                  placeholder="Ingrese Apellido" />
-                </label>
-              </div>
-            </div>
-            <div className="row">
-              <div className="col">
-                <label htmlFor="direccion" className="form-label">
-                  Dirección
-                <input
-                  type="text"
-                  className="form-control"
-                  id="direccion "
-                  name="direccion"
-                  value={direccion}
-                  onChange={handleInputChange}
-                  placeholder="Ingrese Calle" />
-                </label>
-              </div>
-              <div className="col">
-                <label htmlFor="numero" className="form-label">
-                  Numero
-                <input
-                  type="number"
-                  className="form-control"
-                  id="numero "
-                  name="numero"
-                  value={numero}
-                  onChange={handleInputChange}
-                  placeholder="Ingrese Numero" />
-                </label>
-              </div>
-            </div>
-            <div className='row'>
-                <div className="col">
-                  <label htmlFor="telefono" className="form-label">
-                    Telefono
-                  <input
-                    type="tel"
-                    className="form-control"
-                    id="telefono"
-                    name="telefono"
-                    value={telefono}
-                    onChange={handleInputChange}
-                    placeholder="Ingrese Telefono" />
-                  </label>
-                </div>
-                <div className="col">
-                  <label htmlFor="fechaNacimiento" className="form-label">
-                    Fecha Nacimiento
-                  <input
-                    type="date"
-                    className="form-control"
-                    id="fechaNacimiento"
-                    name="fechaNacimiento"
-                    value={fechaNacimiento}
-                    onChange={handleInputChange}
-                    />
-                  </label>
-                </div>
-            </div>
-                <div className='row'>
-                  <div className="col">
-                    <label htmlFor="email" className="form-label">
-                      Correo Electronico
-                      <input
-                      type="email"
-                      className="form-control"
-                      id="email"
-                      name="email"
-                      value={email}
-                      onChange={handleInputChange}
-                      placeholder="Ingrese email" />
-                    </label>
-                  </div>
-                </div>
-                <div className='row'>
-                  <div className="col">
-                    <label htmlFor="password" className="form-label">
-                      Contraseña
-                      <input
-                      type="password"
-                      className="form-control"
-                      id="password"
-                      name="password"
-                      value={password}
-                      onChange={handleInputChange}
-                      placeholder="Ingrese Contraseña" />
-                    </label>
-                </div>
-                <div className="col">
-                  <label htmlFor="repassword" className="form-label">
-                    Repita Contraseña
-                  <input
-                    type="password"
-                    className="form-control"
-                    id="repassword"
-                    name="repassword"
-                    value={repassword}
-                    onChange={handleInputChange}
-                    placeholder="Repita Contraseña" 
-                    />
-                  </label>
-                </div>
-
-
-            </div>
-
-      
-            
-            
-            
-            <button className="btn btn-primary mt-3" onClick={handleSubmit}>Cargar</button>
-            <Link className="btn btn-secondary mt-3" to={'/verFichas'}>Volver al Listado</Link>
-        </form>
-    
-    </>
-  )
+const errorMessage = error => {
+  const validationErrors = error.response?.data?.errors
+  return validationErrors ? Object.values(validationErrors).flat().join(' ') : error.response?.data?.message || error.message || 'No se pudo crear la ficha.'
 }
 
+const FichaCreate = () => {
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+  const { token } = useSelector(state => state.token)
+  const isAdminCreate = Boolean(token)
+  const [values, setValues] = useState({
+    nombre: '', apellido: '', direccion: '', numero: '', telefono: '',
+    fechaNacimiento: '', email: '', password: '', perfil: 'user'
+  })
+  const [passwordConfirmation, setPasswordConfirmation] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const updateField = event => setValues(current => ({ ...current, [event.target.name]: event.target.value }))
+
+  const handleSubmit = async event => {
+    event.preventDefault()
+    setError('')
+    if (values.password !== passwordConfirmation) {
+      setError('Las contraseñas no coinciden.')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const { repassword, ...payload } = { ...values, perfil: 'user' }
+      await dispatch(createFicha(payload))
+      navigate(isAdminCreate ? '/verFichas' : '/login')
+    } catch (requestError) {
+      setError(errorMessage(requestError))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="yoguini-form-page">
+      <form className="yoguini-form" onSubmit={handleSubmit}>
+        <header className="yoguini-form-heading">
+          <p className="yoguinis-eyebrow">Un toque de luz</p>
+          <h1>{isAdminCreate ? 'Nueva ficha' : 'Registro de yoguini'}</h1>
+          <p>Completá los datos para crear la ficha.</p>
+        </header>
+
+        {error && <p className="yoguini-message yoguini-message-error" role="alert">{error}</p>}
+
+        <div className="yoguini-form-fields">
+          <label className="yoguini-field">Nombre
+            <input name="nombre" autoComplete="given-name" value={values.nombre} onChange={updateField} required maxLength="255" />
+          </label>
+          <label className="yoguini-field">Apellido
+            <input name="apellido" autoComplete="family-name" value={values.apellido} onChange={updateField} required maxLength="255" />
+          </label>
+          <label className="yoguini-field yoguini-field-wide">Dirección
+            <input name="direccion" autoComplete="street-address" value={values.direccion} onChange={updateField} required maxLength="255" />
+          </label>
+          <label className="yoguini-field">Número
+            <input name="numero" type="number" min="0" step="1" value={values.numero} onChange={updateField} required />
+          </label>
+          <label className="yoguini-field">Teléfono
+            <input name="telefono" type="tel" autoComplete="tel" value={values.telefono} onChange={updateField} required maxLength="255" />
+          </label>
+          <label className="yoguini-field">Fecha de nacimiento
+            <input name="fechaNacimiento" type="date" value={values.fechaNacimiento} onChange={updateField} required />
+          </label>
+          <label className="yoguini-field yoguini-field-wide">Correo electrónico
+            <input name="email" type="email" autoComplete="email" value={values.email} onChange={updateField} required maxLength="255" />
+          </label>
+          <label className="yoguini-field">Contraseña
+            <input name="password" type="password" autoComplete="new-password" value={values.password} onChange={updateField} required minLength="8" />
+          </label>
+          <label className="yoguini-field">Confirmar contraseña
+            <input type="password" autoComplete="new-password" value={passwordConfirmation} onChange={event => setPasswordConfirmation(event.target.value)} required minLength="8" />
+          </label>
+        </div>
+
+        <div className="yoguini-form-actions">
+          <button className="yoguini-button yoguini-button-primary" type="submit" disabled={saving}>
+            {saving ? 'Guardando...' : 'Crear ficha'}
+          </button>
+          <Link className="yoguini-button yoguini-button-secondary" to={isAdminCreate ? '/verFichas' : '/login'}>Cancelar</Link>
+        </div>
+      </form>
+    </section>
+  )
+}
 
 export default FichaCreate

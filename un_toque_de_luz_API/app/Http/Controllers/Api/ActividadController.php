@@ -28,16 +28,14 @@ class ActividadController extends Controller
      */
     public function create(Request $request)
     {
-        $nombreImagen = cache('ImagenSubida', 'logo_principal.jpg');
         $Actividad = new Actividade;
-        $Actividad->urlImagen = $nombreImagen;
+        $Actividad->urlImagen = $request->input('urlImagen') ?: 'logo_principal.jpg';
         $Actividad->titulo = $request->titulo;
         $Actividad->descripcion = $request->descripcion;
         $Actividad->horarios = $request->horarios;
         
         $Actividad->save();
 
-        cache()->forget('ImagenSubida');
     }
     /**
      * Store a newly created resource in storage.
@@ -54,8 +52,6 @@ class ActividadController extends Controller
         $ext = $archivo->getClientOriginalExtension();
         $nombreImagen = 'actividad_'.now()->format('Ymd_His').'.'.$ext;
         $path = $archivo->storeAs('public/img', $nombreImagen);
-        cache(['ImagenSubida' => $nombreImagen]);
-        
         return $nombreImagen ;
         
         }

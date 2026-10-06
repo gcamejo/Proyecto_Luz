@@ -26,4 +26,21 @@ class Yoguini extends Authenticatable
         'password',
         'perfil'
     ];
+
+    protected $hidden = ['password'];
+
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class, 'user_id');
+    }
+
+    public function reservas()
+    {
+        return $this->hasMany(Reserva::class, 'user_id');
+    }
+
+    public function recuperaciones()
+    {
+        return $this->hasMany(Recuperacion::class, 'user_id');
+    }
 }

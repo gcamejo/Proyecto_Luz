@@ -114,6 +114,13 @@ class YoguiniController extends Controller
     public function destroy($id)
     {
         $Yoguini = Yoguini::findOrFail($id);
+
+        if ($Yoguini->inscripciones()->exists() || $Yoguini->reservas()->exists()) {
+            return response()->json([
+                'message' => 'No se puede eliminar esta ficha porque tiene historial de reservas.',
+            ], 409);
+        }
+
         $Yoguini->delete();
 
         return response()->json(['message' => 'Ficha eliminada correctamente.']);

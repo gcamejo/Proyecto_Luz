@@ -36,14 +36,8 @@ useEffect(()=>{
     setMensaje('Hola ' + usuarioLogueado.nombre )
     setClaseButton('site-nav-session site-nav-session-logout')    
     setMensajeButton('Cerrar Sesion')
-    switch (usuarioLogueado.perfil) {
-      case 'user':
-        setUser(true)
-        break;    
-      case 'Admin':
-        setAdmin(true)
-        break;
-    }
+    setAdmin(usuarioLogueado.perfil === 'Admin')
+    setUser(usuarioLogueado.perfil !== 'Admin')
   }
 },[usuarioLogueado])
 

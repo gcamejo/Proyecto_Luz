@@ -5,10 +5,10 @@ const NavbarUser = () => {
   return (
     <>
     <li className="nav-item">
-        <NavLink className={({isActive}) => `nav-link${isActive ? ' active' : ''}`} to="/actividades">Turnos</NavLink>
+        <NavLink className={({isActive}) => `nav-link${isActive ? ' active' : ''}`} to="/reservarCiclo">Reservar clase</NavLink>
     </li>
     <li className="nav-item">
-        <NavLink className={({isActive}) => `nav-link${isActive ? ' active' : ''}`} to="/actividades">Datos Personales</NavLink>
+        <NavLink className={({isActive}) => `nav-link${isActive ? ' active' : ''}`} to="/misReservas">Mis reservas</NavLink>
     </li>
     </>
     )

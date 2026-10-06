@@ -30,6 +30,7 @@ const NavbarAdmin = () => {
            <li><Link className="dropdown-item" to="/adminServicios">Servicios</Link></li>
            <li><Link className="dropdown-item" to="/adminHorarios">Horarios</Link></li>
            <li><Link className="dropdown-item" to="/adminActividades">Actividades</Link></li>
+           <li><Link className="dropdown-item" to="/adminReservas">Ciclos y reservas</Link></li>
          </ul>
     </li>          
     </>

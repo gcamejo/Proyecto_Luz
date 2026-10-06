@@ -28,6 +28,9 @@ import AdminHorarios from "./AdminHorarios"
 import Footer from "../components/Footer"
 import ActividadesEdit from "./ActividadesEdit"
 import ActividadesCreate from "./ActividadesCreate"
+import BookingStudent from "./BookingStudent"
+import BookingAdmin from "./BookingAdmin"
+import MyBookings from "./MyBookings"
 
 
 
@@ -80,6 +83,9 @@ return (
                           <Route path="/adminActividades" element={<Actividades admin={true}/>}/>
                           <Route path="/nuevaActividad" element={<ActividadesCreate/>}/>
                           <Route path="/editarActividad/:id" element={<ActividadesEdit/>}/> 
+                          <Route path="/reservarCiclo" element={<BookingStudent/>}/>
+                          <Route path="/misReservas" element={<MyBookings/>}/>
+                          {token && <Route path="/adminReservas" element={<BookingAdmin/>}/>}
                           </> 
                           :
                           ''}

@@ -29,6 +29,13 @@ const Inicio = () => {
 
         <div className="inicio-actividades">
           <article className="inicio-actividad">
+            <img src="/img/Constelaciones4.jpg" alt="Yoga" />
+            <div>
+              <h3>Yoga</h3>
+              <p>Encuentra el equilibrio perfecto entre cuerpo, mente y espíritu.</p>
+            </div>
+          </article>
+          <article className="inicio-actividad">
             <img src="/img/Constelaciones4.jpg" alt="Espacio preparado para una sesión de constelaciones" />
             <div>
               <h3>Constelaciones</h3>
@@ -36,7 +43,7 @@ const Inicio = () => {
             </div>
           </article>
           <article className="inicio-actividad">
-            <img src="/img/CuencoAgua.png" alt="Cuenco de agua en una sesión de bienestar" />
+            <img src="/img/CuencoAgua.png" alt="Cuenco en el agua, una sesión de bienestar" />
             <div>
               <h3>Sonido y pausa</h3>
               <p>Regalate un momento de quietud y atención plena.</p>

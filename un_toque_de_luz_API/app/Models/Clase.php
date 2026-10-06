@@ -5,34 +5,40 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Horario extends Model
+class Clase extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'dia_semana',
+        'ciclo_id',
+        'horario_id',
+        'fecha',
         'hora_inicio',
         'duracion_min',
         'nivel',
         'profesor',
         'cupo',
-        'activo',
+        'estado',
     ];
 
     protected $casts = [
-        'dia_semana' => 'integer',
+        'fecha' => 'date:Y-m-d',
         'duracion_min' => 'integer',
         'cupo' => 'integer',
-        'activo' => 'boolean',
     ];
 
-    public function clases()
+    public function ciclo()
     {
-        return $this->hasMany(Clase::class);
+        return $this->belongsTo(Ciclo::class);
     }
 
-    public function inscripciones()
+    public function horario()
     {
-        return $this->belongsToMany(Inscripcion::class, 'inscripcion_horarios')->withTimestamps();
+        return $this->belongsTo(Horario::class);
+    }
+
+    public function reservas()
+    {
+        return $this->hasMany(Reserva::class);
     }
 }

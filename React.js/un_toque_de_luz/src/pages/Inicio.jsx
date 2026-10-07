@@ -8,7 +8,7 @@ const Inicio = () => {
       <section className="inicio-hero">
         <div className="inicio-hero-content">
           <p className="inicio-eyebrow">Yoga · bienestar · encuentro</p>
-          <h1>Un toque de luz para volver a vos.</h1>
+          <h1>Un toque de Luz para volver a vos.</h1>
           <p className="inicio-intro">
             Un espacio para respirar, moverte y encontrar un momento de calma en medio de la rutina.
           </p>

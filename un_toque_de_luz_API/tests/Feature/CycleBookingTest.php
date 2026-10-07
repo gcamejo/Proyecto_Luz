@@ -11,8 +11,9 @@ use App\Models\Inscripcion;
 use App\Models\Recuperacion;
 use App\Models\Reserva;
 use App\Models\Yoguini;
-use App\Services\BookingService;
 use App\Services\GenerateCycleClasses;
+use App\Services\RecuperacionService;
+use App\Services\ReservaService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -108,6 +109,25 @@ class CycleBookingTest extends TestCase
             ->assertJsonPath('hora_inicio', '10:00:00');
     }
 
+    public function test_admin_can_update_holiday_but_not_move_it_onto_a_generated_class_date()
+    {
+        $admin = $this->yoguini('Admin');
+        $holiday = Feriado::create(['fecha' => '2026-10-10', 'descripcion' => 'Initial']);
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $this->makeClass($cycle, $this->schedule(2), '2026-10-12', '10:00:00');
+        $this->actingAs($admin, 'sanctum');
+
+        $this->patchJson("/api/booking/admin/holidays/{$holiday->id}", ['descripcion' => 'Updated'])
+            ->assertOk()
+            ->assertJsonPath('descripcion', 'Updated');
+        $this->patchJson("/api/booking/admin/holidays/{$holiday->id}", ['fecha' => '2026-10-12'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['fecha']);
+        $this->patchJson("/api/booking/admin/holidays/{$holiday->id}", ['fecha' => '2026-10-11'])
+            ->assertOk()
+            ->assertJsonPath('fecha', '2026-10-11');
+    }
+
     public function test_enrollment_rejects_schedule_count_and_full_classes_without_partial_records()
     {
         $cycle = $this->cycle('2026-10-06', '2026-10-06', 1);
@@ -192,8 +212,8 @@ class CycleBookingTest extends TestCase
         $earlyReservation = $this->reserve($student, $enrollment, $early);
         $lateReservation = $this->reserve($student, $enrollment, $late);
 
-        app(BookingService::class)->cancelReservation($student, $earlyReservation);
-        app(BookingService::class)->cancelReservation($student, $lateReservation);
+        app(ReservaService::class)->cancelReservation($student, $earlyReservation);
+        app(ReservaService::class)->cancelReservation($student, $lateReservation);
 
         $this->assertDatabaseHas('reservas', ['id' => $earlyReservation->id, 'estado' => 'cancelada_con_aviso']);
         $this->assertDatabaseHas('reservas', ['id' => $lateReservation->id, 'estado' => 'cancelada']);
@@ -203,6 +223,31 @@ class CycleBookingTest extends TestCase
             'estado' => 'disponible',
         ]);
         $this->assertDatabaseMissing('recuperaciones', ['reserva_origen_id' => $lateReservation->id]);
+    }
+
+    public function test_my_bookings_reports_credit_eligibility_at_the_exact_notice_threshold()
+    {
+        Configuracion::create(['clave' => 'horas_aviso_minimas', 'valor' => '24']);
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $enrollment = $this->enrollment($student, $cycle);
+        $eligibleClass = $this->makeClass($cycle, $this->schedule(2), '2026-10-02', '08:00:00');
+        $ineligibleClass = $this->makeClass($cycle, $this->schedule(3), '2026-10-02', '07:59:00');
+        $eligibleReservation = $this->reserve($student, $enrollment, $eligibleClass);
+        $ineligibleReservation = $this->reserve($student, $enrollment, $ineligibleClass);
+        $this->actingAs($student, 'sanctum');
+
+        $reservations = collect($this->getJson('/api/booking/me')->assertOk()->json('inscripciones'))
+            ->flatMap(function ($item) {
+                return $item['reservas'];
+            })
+            ->keyBy('id');
+
+        $this->assertTrue($reservations[$eligibleReservation->id]['genera_credito']);
+        $this->assertTrue($reservations[$eligibleReservation->id]['puede_cancelar']);
+        $this->assertTrue($reservations[$eligibleReservation->id]['es_proxima']);
+        $this->assertFalse($reservations[$ineligibleReservation->id]['genera_credito']);
+        $this->assertTrue($reservations[$ineligibleReservation->id]['puede_cancelar']);
     }
 
     public function test_recovery_can_cross_cycles_but_rejects_expired_credits_and_full_classes()
@@ -292,7 +337,7 @@ class CycleBookingTest extends TestCase
         $destinationSchedule = $this->schedule(4);
         $destination = $this->makeClass($destinationCycle, $destinationSchedule, '2026-10-08', '12:00:00');
         $this->actingAs($student, 'sanctum');
-        $reservation = app(BookingService::class)->recover($student, $credit, $destination);
+        $reservation = app(RecuperacionService::class)->recover($student, $credit, $destination);
 
         $this->postJson("/api/booking/reservations/{$reservation->id}/cancel")
             ->assertOk()
@@ -306,6 +351,50 @@ class CycleBookingTest extends TestCase
             'vence_en' => '2026-10-31',
         ]);
         $this->assertDatabaseCount('recuperaciones', 1);
+    }
+
+    public function test_students_cannot_cancel_another_users_reservation_or_use_their_credit()
+    {
+        $owner = $this->yoguini();
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $enrollment = $this->enrollment($owner, $cycle);
+        $schedule = $this->schedule(2);
+        $sourceClass = $this->makeClass($cycle, $schedule, '2026-09-29', '10:00:00');
+        $sourceReservation = $this->reserve($owner, $enrollment, $sourceClass, 'cancelada_con_aviso');
+        $credit = $this->credit($owner, $enrollment, $sourceReservation, '2026-10-31');
+        $destination = $this->makeClass($cycle, $this->schedule(4), '2026-10-08', '12:00:00');
+        $this->actingAs($student, 'sanctum');
+
+        $this->postJson("/api/booking/reservations/{$sourceReservation->id}/cancel")
+            ->assertForbidden();
+        $this->postJson("/api/booking/recoveries/{$credit->id}/book", ['clase_id' => $destination->id])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('reservas', ['id' => $sourceReservation->id, 'estado' => 'cancelada_con_aviso']);
+        $this->assertDatabaseHas('recuperaciones', ['id' => $credit->id, 'estado' => 'disponible']);
+    }
+
+    public function test_credits_endpoint_returns_only_the_authenticated_users_credits()
+    {
+        $student = $this->yoguini();
+        $otherStudent = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $studentEnrollment = $this->enrollment($student, $cycle);
+        $otherEnrollment = $this->enrollment($otherStudent, $cycle);
+        $schedule = $this->schedule(2);
+        $studentOrigin = $this->reserve($student, $studentEnrollment, $this->makeClass($cycle, $schedule, '2026-09-29', '10:00:00'), 'cancelada_con_aviso');
+        $otherOrigin = $this->reserve($otherStudent, $otherEnrollment, $this->makeClass($cycle, $this->schedule(3), '2026-09-30', '11:00:00'), 'cancelada_con_aviso');
+        $studentCredit = $this->credit($student, $studentEnrollment, $studentOrigin, '2026-10-31');
+        $this->credit($otherStudent, $otherEnrollment, $otherOrigin, '2026-10-31');
+        $this->actingAs($student, 'sanctum');
+
+        $this->getJson('/api/booking/credits')
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.id', $studentCredit->id)
+            ->assertJsonPath('0.vence_en', '2026-10-31')
+            ->assertJsonPath('0.reserva_origen.clase.fecha', '2026-09-29');
     }
 
     public function test_admin_cancels_class_once_and_issues_one_credit_per_reservation()
@@ -322,13 +411,38 @@ class CycleBookingTest extends TestCase
         $attendedReservation = $this->reserve($attendedStudent, $attendedEnrollment, $class, 'asistio');
         $this->actingAs($admin, 'sanctum');
 
-        $this->postJson("/api/booking/admin/classes/{$class->id}/cancel")->assertOk();
-        $this->postJson("/api/booking/admin/classes/{$class->id}/cancel")->assertOk();
+        $this->patchJson("/api/booking/admin/classes/{$class->id}/cancel")->assertOk();
+        $this->patchJson("/api/booking/admin/classes/{$class->id}/cancel")->assertOk();
 
         $this->assertDatabaseHas('clases', ['id' => $class->id, 'estado' => 'cancelada']);
         $this->assertDatabaseHas('reservas', ['id' => $reservation->id, 'estado' => 'cancelada_con_aviso']);
         $this->assertDatabaseHas('reservas', ['id' => $attendedReservation->id, 'estado' => 'cancelada_con_aviso']);
         $this->assertDatabaseCount('recuperaciones', 2);
+    }
+
+    public function test_admin_can_filter_classes_and_fetch_class_reservations()
+    {
+        $admin = $this->yoguini('Admin');
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $otherCycle = $this->cycle('2026-10-01', '2026-10-31');
+        $enrollment = $this->enrollment($student, $cycle);
+        $firstClass = $this->makeClass($cycle, $this->schedule(2), '2026-10-06', '10:00:00');
+        $this->makeClass($otherCycle, $this->schedule(3), '2026-10-07', '11:00:00');
+        $this->reserve($student, $enrollment, $firstClass);
+        $this->actingAs($admin, 'sanctum');
+
+        $this->getJson("/api/booking/admin/classes?fecha=2026-10-06&ciclo_id={$cycle->id}")
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.id', $firstClass->id)
+            ->assertJsonPath('0.disponibles', 9)
+            ->assertJsonPath('0.reservas.0.yoguini.id', $student->id);
+
+        $this->getJson("/api/booking/admin/classes/{$firstClass->id}/reservations")
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.yoguini.id', $student->id);
     }
 
     public function test_admin_cancellation_of_recovery_class_returns_original_credit_without_chaining()
@@ -346,10 +460,10 @@ class CycleBookingTest extends TestCase
         $destinationSchedule = $this->schedule(4);
         $destination = $this->makeClass($destinationCycle, $destinationSchedule, '2026-10-08', '12:00:00');
         $this->actingAs($student, 'sanctum');
-        $recovery = app(BookingService::class)->recover($student, $credit, $destination);
+        $recovery = app(RecuperacionService::class)->recover($student, $credit, $destination);
         $this->actingAs($admin, 'sanctum');
 
-        $this->postJson("/api/booking/admin/classes/{$destination->id}/cancel")->assertOk();
+        $this->patchJson("/api/booking/admin/classes/{$destination->id}/cancel")->assertOk();
 
         $this->assertDatabaseHas('recuperaciones', [
             'id' => $credit->id,

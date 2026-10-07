@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import axios from 'axios'
+import React, { useState } from 'react'
+import axios from '../api/axios'
+import useSWR from 'swr'
+import fetcher from '../api/fetcher'
 import { BsCalendar2Week, BsClock, BsPeople } from 'react-icons/bs'
 import '../Styles/Reservas.css'
 
@@ -20,27 +22,11 @@ const scheduleOptions = cycle => {
 }
 
 const BookingStudent = () => {
-  const [cycles, setCycles] = useState([])
   const [selectedSchedules, setSelectedSchedules] = useState({})
-  const [loading, setLoading] = useState(true)
   const [savingCycle, setSavingCycle] = useState(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-
-  const loadCycles = async () => {
-    setLoading(true)
-    setError('')
-    try {
-      const { data } = await axios.get('api/booking/cycles/active')
-      setCycles(data)
-    } catch (requestErrorValue) {
-      setError(requestError(requestErrorValue))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => { loadCycles() }, [])
+  const { data: cycles = [], error: loadError, isLoading: loading, mutate: refreshCycles } = useSWR('api/booking/cycles/active', fetcher)
 
   const toggleSchedule = (cycleId, scheduleId) => {
     setSelectedSchedules(current => {
@@ -64,8 +50,7 @@ const BookingStudent = () => {
       await axios.post(`api/booking/cycles/${cycleId}/enroll`, { horario_ids: scheduleIds })
       setNotice(`Inscripción confirmada para ${cycle.nombre}.`)
       setSelectedSchedules(current => ({ ...current, [cycleId]: [] }))
-      const { data } = await axios.get('api/booking/cycles/active')
-      setCycles(data)
+      await refreshCycles()
     } catch (requestErrorValue) {
       setError(requestError(requestErrorValue))
     } finally {
@@ -80,7 +65,7 @@ const BookingStudent = () => {
         <h1 id='booking-title'>Elegí tu ciclo</h1>
         <p>Seleccioná tus días fijos. La reserva se crea para cada clase futura del ciclo.</p>
       </header>
-      {error && <p className='booking-message booking-message-error' role='alert'>{error}</p>}
+      {(error || loadError) && <p className='booking-message booking-message-error' role='alert'>{error || requestError(loadError)}</p>}
       {notice && <p className='booking-message booking-message-success' role='status'>{notice}</p>}
       {loading ? <p className='booking-message' role='status'>Cargando ciclos disponibles...</p> : cycles.length === 0 ? (
         <div className='booking-empty'><h2>No hay ciclos abiertos</h2><p>Cuando haya nuevas fechas disponibles, aparecerán acá.</p></div>

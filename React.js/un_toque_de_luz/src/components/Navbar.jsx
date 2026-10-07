@@ -61,7 +61,7 @@ return (
         <div className="container-fluid">
               <Link className="navbar-brand site-nav-identity" to="/" aria-label="Un toque de luz, inicio">
                 <img src="/img/logo_principal.jpg" alt="" width="48" height="48" />
-                <span>Un toque de luz</span>
+                <span>Un toque de Luz</span>
               </Link>
           <button className="navbar-toggler site-nav-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Abrir navegación">
             <span className="navbar-toggler-icon"></span>

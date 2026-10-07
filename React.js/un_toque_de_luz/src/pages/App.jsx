@@ -1,5 +1,4 @@
 import { BrowserRouter, Route, Routes} from "react-router-dom"
-import axios from "axios"
 import { useSelector } from 'react-redux'
 
 
@@ -31,6 +30,7 @@ import ActividadesCreate from "./ActividadesCreate"
 import BookingStudent from "./BookingStudent"
 import BookingAdmin from "./BookingAdmin"
 import MyBookings from "./MyBookings"
+import TurnosClases from "./TurnosClases"
 
 
 
@@ -40,14 +40,6 @@ function App() {
 
 
 const {token} = useSelector((estado=>estado.token))
-
-axios.defaults.baseURL = 'http://localhost:8000/';
-axios.defaults.headers.common['Accept'] = 'application/json';
-axios.defaults.headers.common['Content-Type'] = 'application/json';
-axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-axios.defaults.withCredentials = true;
-axios.defaults.withXSRFToken = true;
 
 return (
   <>
@@ -85,6 +77,7 @@ return (
                           <Route path="/editarActividad/:id" element={<ActividadesEdit/>}/> 
                           <Route path="/reservarCiclo" element={<BookingStudent/>}/>
                           <Route path="/misReservas" element={<MyBookings/>}/>
+                          {token && <Route path="/adminTurnos" element={<TurnosClases/>}/>}
                           {token && <Route path="/adminReservas" element={<BookingAdmin/>}/>}
                           </> 
                           :

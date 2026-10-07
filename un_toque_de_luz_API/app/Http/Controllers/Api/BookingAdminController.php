@@ -3,16 +3,23 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Booking\Admin\ClassIndexRequest;
+use App\Http\Requests\Booking\Admin\CycleRequest;
+use App\Http\Requests\Booking\Admin\MarkAttendanceRequest;
+use App\Http\Requests\Booking\Admin\ScheduleRequest;
+use App\Http\Requests\Booking\Admin\StoreHolidayRequest;
+use App\Http\Requests\Booking\Admin\UpdateHolidayRequest;
+use App\Http\Resources\Booking\ClaseResource;
+use App\Http\Resources\Booking\ReservaResource;
 use App\Models\Clase;
 use App\Models\Ciclo;
 use App\Models\Feriado;
 use App\Models\Horario;
 use App\Models\Reserva;
-use App\Services\BookingService;
-use App\Services\GenerateCycleClasses;
+use App\Services\CicloService;
+use App\Services\ReservaService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class BookingAdminController extends Controller
@@ -22,9 +29,9 @@ class BookingAdminController extends Controller
         return Horario::orderBy('dia_semana')->orderBy('hora_inicio')->get();
     }
 
-    public function createSchedule(Request $request)
+    public function createSchedule(ScheduleRequest $request)
     {
-        return response()->json(Horario::create($this->validateSchedule($request)), 201);
+        return response()->json(Horario::create($this->validatedSchedule($request)), 201);
     }
 
     public function showSchedule(Horario $horario)
@@ -32,9 +39,9 @@ class BookingAdminController extends Controller
         return $horario;
     }
 
-    public function updateSchedule(Request $request, Horario $horario)
+    public function updateSchedule(ScheduleRequest $request, Horario $horario)
     {
-        $horario->update($this->validateSchedule($request, true));
+        $horario->update($this->validatedSchedule($request));
         return $horario->fresh();
     }
 
@@ -45,67 +52,50 @@ class BookingAdminController extends Controller
         return response()->json(['message' => 'Schedule deactivated.']);
     }
 
-    public function cycles()
+    public function cycles(CicloService $ciclos)
     {
-        return Ciclo::withCount(['clases', 'inscripciones'])->orderByDesc('fecha_inicio')->get();
+        return $ciclos->all();
     }
 
-    public function createCycle(Request $request)
+    public function createCycle(CycleRequest $request, CicloService $ciclos)
     {
-        return response()->json(Ciclo::create($this->validateCycle($request)), 201);
+        return response()->json($ciclos->create($request->validated()), 201);
     }
 
-    public function showCycle(Ciclo $ciclo)
+    public function showCycle(Ciclo $ciclo, CicloService $ciclos)
     {
-        return $ciclo->loadCount(['clases', 'inscripciones']);
+        return $ciclos->show($ciclo);
     }
 
-    public function updateCycle(Request $request, Ciclo $ciclo)
+    public function updateCycle(CycleRequest $request, Ciclo $ciclo, CicloService $ciclos)
     {
-        return DB::transaction(function () use ($request, $ciclo) {
-            $ciclo = Ciclo::whereKey($ciclo->id)->lockForUpdate()->firstOrFail();
-            $validated = $this->validateCycle($request, true);
-            $start = Carbon::parse($validated['fecha_inicio'] ?? $ciclo->fecha_inicio->toDateString());
-            $end = Carbon::parse($validated['fecha_fin'] ?? $ciclo->fecha_fin->toDateString());
-            if ($end->lt($start)) {
-                throw ValidationException::withMessages([
-                    'fecha_fin' => ['The cycle end date must be on or after its start date.'],
-                ]);
-            }
-            if ($ciclo->clases()->exists()) {
-                foreach (['fecha_inicio', 'fecha_fin', 'clases_por_semana'] as $field) {
-                    $currentValue = in_array($field, ['fecha_inicio', 'fecha_fin'], true)
-                        ? $ciclo->{$field}->toDateString()
-                        : (string) $ciclo->{$field};
-                    if (array_key_exists($field, $validated) && (string) $validated[$field] !== $currentValue) {
-                        throw ValidationException::withMessages([
-                            $field => ['Cycle dates and weekly class count cannot change after classes have been generated.'],
-                        ]);
-                    }
-                }
-            }
-            $ciclo->update($validated);
-            return $ciclo->fresh()->loadCount(['clases', 'inscripciones']);
-        });
+        return $ciclos->update($ciclo, $request->validated());
     }
 
-    public function deleteCycle(Ciclo $ciclo)
+    public function deleteCycle(Ciclo $ciclo, CicloService $ciclos)
     {
-        if ($ciclo->clases()->exists() || $ciclo->inscripciones()->exists()) {
+        if (!$ciclos->delete($ciclo)) {
             return response()->json(['message' => 'A cycle with generated classes or enrollments cannot be deleted.'], 409);
         }
-        $ciclo->delete();
         return response()->json(null, 204);
     }
 
-    public function generateClasses(Ciclo $ciclo, GenerateCycleClasses $generator)
+    public function generateClasses(Ciclo $ciclo, CicloService $ciclos)
     {
-        return response()->json($generator->generate($ciclo));
+        return response()->json($ciclos->generateClasses($ciclo));
     }
 
-    public function classes()
+    public function classes(ClassIndexRequest $request)
     {
-        return Clase::with('ciclo', 'horario', 'reservas.yoguini')
+        $filters = $request->validated();
+
+        $classes = Clase::with('ciclo', 'horario', 'reservas.yoguini')
+            ->when(isset($filters['fecha']), function ($query) use ($filters) {
+                $query->whereDate('fecha', $filters['fecha']);
+            })
+            ->when(isset($filters['ciclo_id']), function ($query) use ($filters) {
+                $query->where('ciclo_id', $filters['ciclo_id']);
+            })
             ->withCount(['reservas as ocupados' => function ($query) {
                 $query->whereIn('estado', ['reservada', 'asistio']);
             }])
@@ -116,22 +106,29 @@ class BookingAdminController extends Controller
                     ->addMinutes($class->duracion_min);
                 $class->setAttribute('puede_completarse', $class->estado === 'programada' && !$endsAt->isFuture());
             });
+
+        return response()->json(ClaseResource::collection($classes)->resolve());
     }
 
-    public function cancelClass(Clase $clase, BookingService $booking)
+    public function classReservations(Clase $clase)
     {
-        return $booking->cancelClass($clase);
+        return response()->json(ReservaResource::collection($clase->reservas()->with('yoguini')->orderBy('id')->get())->resolve());
     }
 
-    public function completeClass(Clase $clase, BookingService $booking)
+    public function cancelClass(Clase $clase, ReservaService $reservas)
     {
-        return $booking->completeClass($clase);
+        return $reservas->cancelClass($clase);
     }
 
-    public function markAttendance(Request $request, Reserva $reserva, BookingService $booking)
+    public function completeClass(Clase $clase, ReservaService $reservas)
     {
-        $validated = $request->validate(['estado' => 'required|in:asistio,falto']);
-        return $booking->markAttendance($reserva, $validated['estado']);
+        return $reservas->completeClass($clase);
+    }
+
+    public function markAttendance(MarkAttendanceRequest $request, Reserva $reserva, ReservaService $reservas)
+    {
+        $validated = $request->validated();
+        return $reservas->markAttendance($reserva, $validated['estado']);
     }
 
     public function holidays()
@@ -139,12 +136,9 @@ class BookingAdminController extends Controller
         return Feriado::orderBy('fecha')->get();
     }
 
-    public function createHoliday(Request $request)
+    public function createHoliday(StoreHolidayRequest $request)
     {
-        $validated = $request->validate([
-            'fecha' => 'required|date|unique:feriados,fecha',
-            'descripcion' => 'nullable|string|max:255',
-        ]);
+        $validated = $request->validated();
         if (Clase::whereDate('fecha', $validated['fecha'])->exists()) {
             throw ValidationException::withMessages([
                 'fecha' => ['Classes already exist on this date. Adding a holiday will not change generated classes.'],
@@ -153,40 +147,32 @@ class BookingAdminController extends Controller
         return response()->json(Feriado::create($validated), 201);
     }
 
+    public function updateHoliday(UpdateHolidayRequest $request, Feriado $feriado)
+    {
+        $validated = $request->validated();
+        $date = $validated['fecha'] ?? $feriado->fecha->toDateString();
+        if ($date !== $feriado->fecha->toDateString() && Clase::whereDate('fecha', $date)->exists()) {
+            throw ValidationException::withMessages([
+                'fecha' => ['Classes already exist on this date. Updating the holiday will not change generated classes.'],
+            ]);
+        }
+
+        $feriado->update($validated);
+        return $feriado->fresh();
+    }
+
     public function deleteHoliday(Feriado $feriado)
     {
         $feriado->delete();
         return response()->json(null, 204);
     }
 
-    private function validateSchedule(Request $request, $partial = false)
+    private function validatedSchedule(ScheduleRequest $request)
     {
-        $required = $partial ? 'sometimes' : 'required';
-        $validated = $request->validate([
-            'dia_semana' => $required.'|integer|between:0,6',
-            'hora_inicio' => $required.'|date_format:H:i',
-            'duracion_min' => $required.'|integer|min:1|max:1440',
-            'nivel' => $partial ? 'sometimes|nullable|string|max:255' : 'nullable|string|max:255',
-            'profesor' => $partial ? 'sometimes|nullable|string|max:255' : 'nullable|string|max:255',
-            'cupo' => $required.'|integer|min:1|max:65535',
-            'activo' => 'sometimes|boolean',
-        ]);
+        $validated = $request->validated();
         if (isset($validated['hora_inicio']) && strlen($validated['hora_inicio']) === 5) {
             $validated['hora_inicio'] .= ':00';
         }
         return $validated;
-    }
-
-    private function validateCycle(Request $request, $partial = false)
-    {
-        $required = $partial ? 'sometimes' : 'required';
-        return $request->validate([
-            'nombre' => $required.'|string|max:255',
-            'fecha_inicio' => $required.'|date',
-            'fecha_fin' => $required.'|date'.($partial ? '' : '|after_or_equal:fecha_inicio'),
-            'clases_por_semana' => $required.'|integer|between:1,7',
-            'precio' => $required.'|numeric|min:0|max:99999999.99',
-            'activo' => 'sometimes|boolean',
-        ]);
     }
 }

@@ -58,12 +58,13 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->prefix('booking')->group(function () {
     Route::get('/cycles/active', [BookingController::class, 'activeCycles']);
     Route::get('/me', [BookingController::class, 'myBookings']);
+    Route::get('/credits', [BookingController::class, 'myCredits']);
     Route::post('/cycles/{ciclo}/enroll', [BookingController::class, 'enroll']);
     Route::post('/reservations/{reserva}/cancel', [BookingController::class, 'cancelReservation']);
     Route::get('/recoveries/available-classes', [BookingController::class, 'recoveryClasses']);
     Route::post('/recoveries/{recuperacion}/book', [BookingController::class, 'bookRecovery']);
 
-    Route::prefix('admin')->middleware('admin')->group(function () {
+    Route::prefix('admin')->middleware('can:manage,App\\Models\\Clase')->group(function () {
         Route::get('/schedules', [BookingAdminController::class, 'schedules']);
         Route::post('/schedules', [BookingAdminController::class, 'createSchedule']);
         Route::get('/schedules/{horario}', [BookingAdminController::class, 'showSchedule']);
@@ -78,11 +79,14 @@ Route::middleware('auth:sanctum')->prefix('booking')->group(function () {
         Route::post('/cycles/{ciclo}/classes/generate', [BookingAdminController::class, 'generateClasses']);
 
         Route::get('/classes', [BookingAdminController::class, 'classes']);
+        Route::get('/classes/{clase}/reservations', [BookingAdminController::class, 'classReservations']);
+        Route::patch('/classes/{clase}/cancel', [BookingAdminController::class, 'cancelClass']);
         Route::post('/classes/{clase}/cancel', [BookingAdminController::class, 'cancelClass']);
         Route::post('/classes/{clase}/complete', [BookingAdminController::class, 'completeClass']);
         Route::patch('/reservations/{reserva}/attendance', [BookingAdminController::class, 'markAttendance']);
         Route::get('/holidays', [BookingAdminController::class, 'holidays']);
         Route::post('/holidays', [BookingAdminController::class, 'createHoliday']);
+        Route::patch('/holidays/{feriado}', [BookingAdminController::class, 'updateHoliday']);
         Route::delete('/holidays/{feriado}', [BookingAdminController::class, 'deleteHoliday']);
     });
 });

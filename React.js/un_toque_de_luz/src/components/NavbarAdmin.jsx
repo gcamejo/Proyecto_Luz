@@ -4,14 +4,8 @@ import { Link } from 'react-router-dom'
 const NavbarAdmin = () => {
   return (
     <>
-    <li className="nav-item dropdown">
-        <button className="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-            Turnos
-        </button>                     
-        <ul className="dropdown-menu">
-          <li><Link className="dropdown-item" to="/verTurnos">Ver Listado</Link></li>
-          <li><Link className="dropdown-item" to="/cargarTurno">Cargar Turno</Link></li>
-        </ul>
+    <li className="nav-item">
+      <Link className="nav-link" to="/adminTurnos">Turnos</Link>
     </li>
     <li className="nav-item dropdown">
         <button className="nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -30,7 +24,7 @@ const NavbarAdmin = () => {
            <li><Link className="dropdown-item" to="/adminServicios">Servicios</Link></li>
            <li><Link className="dropdown-item" to="/adminHorarios">Horarios</Link></li>
            <li><Link className="dropdown-item" to="/adminActividades">Actividades</Link></li>
-           <li><Link className="dropdown-item" to="/adminReservas">Ciclos y reservas</Link></li>
+           <li><Link className="dropdown-item" to="/adminReservas">Administrar clases</Link></li>
          </ul>
     </li>          
     </>

@@ -29,7 +29,7 @@ class Clase extends Model
 
     public function ciclo()
     {
-        return $this->belongsTo(Ciclo::class);
+        return $this->belongsTo(Ciclo::class)->withTrashed();
     }
 
     public function horario()

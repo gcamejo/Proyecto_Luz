@@ -31,11 +31,24 @@ class GenerateCycleClasses
                     return substr((string) $date, 0, 10);
                 })
                 ->flip();
-            $schedules = Horario::where('activo', true)
+            $scheduleIds = $ciclo->horarios()->orderBy('horarios.id')->pluck('horarios.id');
+            if ($scheduleIds->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'horario_ids' => ['Select the schedules for this cycle before generating classes.'],
+                ]);
+            }
+
+            $schedules = Horario::whereIn('id', $scheduleIds)
+                ->where('activo', true)
                 ->orderBy('id')
                 ->lockForUpdate()
-                ->get()
-                ->groupBy('dia_semana');
+                ->get();
+            if ($schedules->count() !== $scheduleIds->count()) {
+                throw ValidationException::withMessages([
+                    'horario_ids' => ['All selected schedules must be active before generating classes.'],
+                ]);
+            }
+            $schedules = $schedules->groupBy('dia_semana');
             $created = 0;
             $skipped = 0;
 

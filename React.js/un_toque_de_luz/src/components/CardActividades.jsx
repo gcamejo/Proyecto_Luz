@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { BsPencilSquare, BsTrash, BsWhatsapp } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
 import { deleteActividad } from '../store/Slice/actividades/actividades'
+import { apiAssetUrl } from '../api/axios'
 
 import '../Styles/Actividades.css'
 
@@ -16,7 +17,7 @@ const [confirmingDelete, setConfirmingDelete] = useState(false)
 const [deleting, setDeleting] = useState(false)
 const [deleteError, setDeleteError] = useState(null)
 
-const urlImagen = 'http://localhost:8000/storage/img/' + name
+const urlImagen = apiAssetUrl(`storage/img/${encodeURIComponent(name)}`)
 
 const borrarActividad = async (e) =>{
   e.preventDefault()

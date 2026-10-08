@@ -7,7 +7,7 @@ import '../Styles/Reservas.css'
 
 const weekdays = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const blankSchedule = { dia_semana: '1', hora_inicio: '18:00', duracion_min: '60', nivel: '', profesor: '', cupo: '10', activo: true }
-const blankCycle = { nombre: '', fecha_inicio: '', fecha_fin: '', clases_por_semana: '2', precio: '' }
+const blankCycle = { nombre: '', fecha_inicio: '', fecha_fin: '', clases_por_semana: '2', horario_ids: [], precio: '' }
 const blankHoliday = { fecha: '', descripcion: '' }
 const requestError = error => {
   const validation = error.response?.data?.errors
@@ -40,15 +40,18 @@ const BookingAdmin = () => {
   const loadError = schedulesError || cyclesError || classesError || holidaysError
   const displayError = error || (loadError ? requestError(loadError) : '')
   const refresh = () => Promise.all([refreshSchedules(), refreshCycles(), refreshClasses(), refreshHolidays()])
+  const editingCycle = cycles.find(cycle => cycle.id === editingCycleId)
+  const cycleSchedulesLocked = Boolean(editingCycle && editingCycle.clases_count > 0)
+  const validCycleSelection = cycleForm.horario_ids.length === Number(cycleForm.clases_por_semana)
 
-  const runAction = async (key, action, successMessage) => {
+  const runAction = async (key, action, successMessage, refreshData = refresh) => {
     setSaving(key)
     setError('')
     setNotice('')
     try {
       const result = await action()
       setNotice(typeof successMessage === 'function' ? successMessage(result?.data) : successMessage)
-      await refresh()
+      await refreshData()
       return true
     } catch (requestErrorValue) {
       setError(requestError(requestErrorValue))
@@ -77,7 +80,12 @@ const BookingAdmin = () => {
 
   const createCycle = event => {
     event.preventDefault()
-    const payload = { ...cycleForm, clases_por_semana: Number(cycleForm.clases_por_semana), precio: Number(cycleForm.precio) }
+    const payload = {
+      ...cycleForm,
+      clases_por_semana: Number(cycleForm.clases_por_semana),
+      horario_ids: cycleForm.horario_ids.map(Number),
+      precio: Number(cycleForm.precio),
+    }
     const updating = Boolean(editingCycleId)
     const actionKey = updating ? `cycle-update-${editingCycleId}` : 'cycle-create'
     const action = updating
@@ -112,7 +120,20 @@ const BookingAdmin = () => {
       fecha_inicio: cycle.fecha_inicio.slice(0, 10),
       fecha_fin: cycle.fecha_fin.slice(0, 10),
       clases_por_semana: String(cycle.clases_por_semana),
+      horario_ids: (cycle.horarios || []).map(schedule => String(schedule.id)),
       precio: String(cycle.precio),
+    })
+  }
+
+  const toggleCycleSchedule = scheduleId => {
+    setCycleForm(current => {
+      const selected = current.horario_ids
+      const exists = selected.includes(String(scheduleId))
+      if (!exists && selected.length >= Number(current.clases_por_semana)) return current
+      return {
+        ...current,
+        horario_ids: exists ? selected.filter(id => id !== String(scheduleId)) : [...selected, String(scheduleId)],
+      }
     })
   }
 
@@ -137,10 +158,18 @@ const BookingAdmin = () => {
     setHolidayForm({ fecha: holiday.fecha.slice(0, 10), descripcion: holiday.descripcion || '' })
   }
 
-  const generateCycle = cycle => runAction(`generate-${cycle.id}`,
-    () => axios.post(`api/booking/admin/cycles/${cycle.id}/classes/generate`),
-    result => `Clases generadas: ${result?.created || 0}; existentes: ${result?.skipped || 0}.`
-  )
+  const generateCycle = async cycle => {
+    const generated = await runAction(
+      `generate-${cycle.id}`,
+      () => axios.post(`api/booking/admin/cycles/${cycle.id}/classes/generate`),
+      result => `Clases generadas: ${result?.created || 0}; existentes: ${result?.skipped || 0}.`,
+      () => refreshCycles()
+    )
+
+    if (generated) {
+      setClassFilters(current => ({ ...current, ciclo_id: String(cycle.id) }))
+    }
+  }
 
   const toggleCycle = cycle => runAction(`toggle-cycle-${cycle.id}`,
     () => axios.patch(`api/booking/admin/cycles/${cycle.id}`, { activo: !cycle.activo }),
@@ -148,10 +177,10 @@ const BookingAdmin = () => {
   )
 
   const deleteCycle = cycle => {
-    if (!window.confirm(`¿Eliminar el ciclo ${cycle.nombre}?`)) return
+    if (!window.confirm(`¿Eliminar el ciclo ${cycle.nombre} de la administración? Se conservarán sus clases, reservas, créditos e historial.`)) return
     return runAction(`delete-cycle-${cycle.id}`,
       () => axios.delete(`api/booking/admin/cycles/${cycle.id}`),
-      'Ciclo eliminado.'
+      'Ciclo eliminado de la administración; el historial se conserva.'
     )
   }
 
@@ -236,7 +265,38 @@ const BookingAdmin = () => {
             <label>Fecha de fin<input type='date' min={cycleForm.fecha_inicio} value={cycleForm.fecha_fin} onChange={event => setCycleForm(current => ({ ...current, fecha_fin: event.target.value }))} required /></label>
             <label>Clases por semana<input type='number' min='1' max='7' value={cycleForm.clases_por_semana} onChange={event => setCycleForm(current => ({ ...current, clases_por_semana: event.target.value }))} required /></label>
             <label>Precio del ciclo<input type='number' min='0' step='0.01' value={cycleForm.precio} onChange={event => setCycleForm(current => ({ ...current, precio: event.target.value }))} required /></label>
-            <button className='booking-button booking-button-primary booking-form-wide' type='submit' disabled={Boolean(saving)}>
+            <fieldset className='booking-schedule-options booking-form-wide' aria-describedby='cycle-schedule-count'>
+              <legend>Horarios para este ciclo</legend>
+              {schedules.length === 0 ? <p className='booking-muted'>Primero creá horarios semanales activos.</p> : schedules.map(schedule => {
+                const scheduleId = String(schedule.id)
+                const selected = cycleForm.horario_ids.includes(scheduleId)
+                const unavailable = !schedule.activo && !selected
+                const selectionLimitReached = !selected && cycleForm.horario_ids.length >= Number(cycleForm.clases_por_semana)
+                return (
+                  <label className={`booking-schedule-option${selected ? ' is-selected' : ''}`} key={schedule.id}>
+                    <input
+                      type='checkbox'
+                      checked={selected}
+                      disabled={cycleSchedulesLocked || unavailable || selectionLimitReached}
+                      onChange={() => toggleCycleSchedule(schedule.id)}
+                    />
+                    <span className='booking-schedule-main'>
+                      <strong>{weekdays[schedule.dia_semana]} · {schedule.hora_inicio.slice(0, 5)}</strong>
+                      <span>{schedule.duracion_min} min · {schedule.cupo} lugares</span>
+                    </span>
+                    <span className='booking-schedule-side'>
+                      {schedule.nivel || 'Todos los niveles'}
+                      {!schedule.activo && <small>Inactivo</small>}
+                    </span>
+                  </label>
+                )
+              })}
+              <p id='cycle-schedule-count' className={validCycleSelection ? 'booking-selection-valid' : 'booking-muted'}>
+                Seleccionados: {cycleForm.horario_ids.length} de {cycleForm.clases_por_semana}
+                {cycleSchedulesLocked && ' · No se pueden cambiar con clases generadas'}
+              </p>
+            </fieldset>
+            <button className='booking-button booking-button-primary booking-form-wide' type='submit' disabled={Boolean(saving) || !validCycleSelection}>
               <BsPlusLg aria-hidden='true' /> {saving === (editingCycleId ? `cycle-update-${editingCycleId}` : 'cycle-create') ? 'Guardando...' : editingCycleId ? 'Guardar ciclo' : 'Crear ciclo'}
             </button>
             {editingCycleId && <button className='booking-text-button booking-form-wide' type='button' onClick={() => { setEditingCycleId(null); setCycleForm(blankCycle) }}>Cancelar edición</button>}
@@ -244,12 +304,24 @@ const BookingAdmin = () => {
           <div className='booking-admin-list'>
             {cycles.map(cycle => (
               <div className='booking-admin-list-row' key={cycle.id}>
-                <div><strong>{cycle.nombre}</strong><span>{formatDate(cycle.fecha_inicio)} a {formatDate(cycle.fecha_fin)} · {cycle.clases_por_semana} días/semana · ${Number(cycle.precio).toLocaleString('es-AR')}</span><small>{cycle.clases_count} clases · {cycle.inscripciones_count} inscripciones</small></div>
+                <div><strong>{cycle.nombre}</strong><span>{formatDate(cycle.fecha_inicio)} a {formatDate(cycle.fecha_fin)} · {cycle.clases_por_semana} días/semana · ${Number(cycle.precio).toLocaleString('es-AR')}</span><small>{(cycle.horarios || []).map(schedule => `${weekdays[schedule.dia_semana]} ${schedule.hora_inicio.slice(0, 5)}`).join(' · ') || 'Sin horarios seleccionados'}</small><small>{cycle.clases_count} clases ({cycle.clases_programadas_count} programadas) · {cycle.inscripciones_count} inscripciones</small></div>
                 <div className='booking-row-actions'>
                   <button className='booking-text-button' type='button' disabled={Boolean(saving)} onClick={() => editCycle(cycle)}>Editar</button>
-                  <button className='booking-text-button' type='button' disabled={Boolean(saving)} onClick={() => generateCycle(cycle)}>{saving === `generate-${cycle.id}` ? 'Generando...' : 'Generar clases'}</button>
+                  <button className='booking-text-button' type='button' disabled={Boolean(saving) || !cycle.horarios?.length} onClick={() => generateCycle(cycle)}>{saving === `generate-${cycle.id}` ? 'Generando...' : 'Generar clases'}</button>
                   <button className='booking-text-button' type='button' disabled={Boolean(saving)} onClick={() => toggleCycle(cycle)}>{cycle.activo ? 'Pausar' : 'Activar'}</button>
-                  <button className='booking-text-button booking-text-button-danger' type='button' disabled={Boolean(saving) || cycle.clases_count > 0 || cycle.inscripciones_count > 0} onClick={() => deleteCycle(cycle)}>Eliminar</button>
+                  <button
+                    className='booking-text-button booking-text-button-danger'
+                    type='button'
+                    disabled={Boolean(saving) || cycle.activo || cycle.clases_programadas_count > 0}
+                    title={cycle.activo
+                      ? 'Pausá el ciclo antes de eliminarlo.'
+                      : cycle.clases_programadas_count > 0
+                        ? 'Cancelá todas las clases programadas antes de eliminarlo.'
+                        : 'El ciclo se quitará de administración y se conservará su historial.'}
+                    onClick={() => deleteCycle(cycle)}
+                  >Eliminar</button>
+                  {cycle.activo && <small className='booking-muted'>Pausá el ciclo para habilitar su eliminación.</small>}
+                  {!cycle.activo && cycle.clases_programadas_count > 0 && <small className='booking-muted'>Cancelá las clases programadas para habilitar su eliminación.</small>}
                 </div>
               </div>
             ))}

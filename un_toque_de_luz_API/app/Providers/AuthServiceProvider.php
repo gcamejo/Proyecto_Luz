@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\Clase;
+use App\Models\Inscripcion;
 use App\Models\Recuperacion;
 use App\Models\Reserva;
 use App\Policies\BookingAdminPolicy;
+use App\Policies\InscripcionPolicy;
 use App\Policies\RecuperacionPolicy;
 use App\Policies\ReservaPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -20,6 +22,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         Clase::class => BookingAdminPolicy::class,
+        Inscripcion::class => InscripcionPolicy::class,
         Reserva::class => ReservaPolicy::class,
         Recuperacion::class => RecuperacionPolicy::class,
     ];

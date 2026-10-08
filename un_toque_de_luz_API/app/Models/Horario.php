@@ -31,6 +31,11 @@ class Horario extends Model
         return $this->hasMany(Clase::class);
     }
 
+    public function ciclos()
+    {
+        return $this->belongsToMany(Ciclo::class, 'ciclo_horarios');
+    }
+
     public function inscripciones()
     {
         return $this->belongsToMany(Inscripcion::class, 'inscripcion_horarios')->withTimestamps();

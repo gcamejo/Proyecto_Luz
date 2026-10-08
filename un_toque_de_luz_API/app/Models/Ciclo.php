@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Ciclo extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'nombre',
@@ -29,6 +30,11 @@ class Ciclo extends Model
     public function clases()
     {
         return $this->hasMany(Clase::class);
+    }
+
+    public function horarios()
+    {
+        return $this->belongsToMany(Horario::class, 'ciclo_horarios');
     }
 
     public function inscripciones()

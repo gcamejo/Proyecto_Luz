@@ -9,7 +9,7 @@ class ConfiguracionSeeder extends Seeder
 {
     public function run()
     {
-        Configuracion::firstOrCreate(
+        Configuracion::updateOrCreate(
             ['clave' => 'horas_aviso_minimas'],
             ['valor' => '24']
         );

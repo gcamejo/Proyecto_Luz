@@ -16,6 +16,7 @@ use App\Services\RecuperacionService;
 use App\Services\ReservaService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class CycleBookingTest extends TestCase
@@ -43,7 +44,8 @@ class CycleBookingTest extends TestCase
         $thursday = $this->schedule(4);
         Feriado::create(['fecha' => '2026-10-07', 'descripcion' => 'Holiday']);
 
-        $singleDay = $this->cycle('2026-10-06', '2026-10-06');
+        $singleDay = $this->cycle('2026-10-06', '2026-10-06', 2);
+        $singleDay->horarios()->sync([$tuesdayOne->id, $tuesdayTwo->id]);
         $generator = app(GenerateCycleClasses::class);
         $first = $generator->generate($singleDay);
         $second = $generator->generate($singleDay);
@@ -54,7 +56,8 @@ class CycleBookingTest extends TestCase
         $this->assertDatabaseHas('clases', ['ciclo_id' => $singleDay->id, 'horario_id' => $tuesdayOne->id]);
         $this->assertDatabaseHas('clases', ['ciclo_id' => $singleDay->id, 'horario_id' => $tuesdayTwo->id]);
 
-        $holidayRange = $this->cycle('2026-10-07', '2026-10-08');
+        $holidayRange = $this->cycle('2026-10-07', '2026-10-08', 2);
+        $holidayRange->horarios()->sync([$wednesday->id, $thursday->id]);
         $generator->generate($holidayRange);
         $this->assertDatabaseMissing('clases', ['ciclo_id' => $holidayRange->id, 'horario_id' => $wednesday->id]);
         $this->assertDatabaseHas('clases', [
@@ -69,6 +72,8 @@ class CycleBookingTest extends TestCase
         $schedule = $this->schedule(2);
         $firstCycle = $this->cycle('2026-10-06', '2026-10-06');
         $secondCycle = $this->cycle('2026-10-06', '2026-10-06');
+        $firstCycle->horarios()->sync([$schedule->id]);
+        $secondCycle->horarios()->sync([$schedule->id]);
         $generator = app(GenerateCycleClasses::class);
         $generator->generate($firstCycle);
 
@@ -83,18 +88,111 @@ class CycleBookingTest extends TestCase
         $this->assertDatabaseMissing('clases', ['ciclo_id' => $secondCycle->id, 'horario_id' => $schedule->id]);
     }
 
+    public function test_admin_cycle_creation_requires_and_persists_selected_schedules()
+    {
+        $admin = $this->yoguini('Admin');
+        $tuesday = $this->schedule(2);
+        $thursday = $this->schedule(4);
+        $this->actingAs($admin, 'sanctum');
+        $payload = [
+            'nombre' => 'Selected schedules',
+            'fecha_inicio' => '2026-10-06',
+            'fecha_fin' => '2026-10-30',
+            'clases_por_semana' => 2,
+            'horario_ids' => [$tuesday->id, $thursday->id],
+            'precio' => 1000,
+        ];
+
+        $response = $this->postJson('/api/booking/admin/cycles', $payload)
+            ->assertCreated()
+            ->assertJsonCount(2, 'horarios');
+
+        $cycleId = $response->json('id');
+        $this->assertDatabaseHas('ciclo_horarios', ['ciclo_id' => $cycleId, 'horario_id' => $tuesday->id]);
+        $this->assertDatabaseHas('ciclo_horarios', ['ciclo_id' => $cycleId, 'horario_id' => $thursday->id]);
+
+        $friday = $this->schedule(5);
+        $this->patchJson("/api/booking/admin/cycles/{$cycleId}", [
+            'clases_por_semana' => 1,
+            'horario_ids' => [$friday->id],
+        ])->assertOk();
+        $this->assertDatabaseMissing('ciclo_horarios', ['ciclo_id' => $cycleId, 'horario_id' => $tuesday->id]);
+        $this->assertDatabaseMissing('ciclo_horarios', ['ciclo_id' => $cycleId, 'horario_id' => $thursday->id]);
+        $this->assertDatabaseHas('ciclo_horarios', ['ciclo_id' => $cycleId, 'horario_id' => $friday->id]);
+
+        $this->postJson('/api/booking/admin/cycles', array_merge($payload, [
+            'nombre' => 'Wrong schedule count',
+            'clases_por_semana' => 1,
+        ]))->assertUnprocessable()->assertJsonValidationErrors(['horario_ids']);
+    }
+
+    public function test_second_cycle_generates_only_its_selected_schedule()
+    {
+        $firstSchedule = $this->schedule(2);
+        $secondSchedule = $this->schedule(2, ['hora_inicio' => '11:00:00']);
+        $firstCycle = $this->cycle('2026-10-06', '2026-10-06');
+        $secondCycle = $this->cycle('2026-10-06', '2026-10-06');
+        $firstCycle->horarios()->sync([$firstSchedule->id]);
+        $secondCycle->horarios()->sync([$secondSchedule->id]);
+        $generator = app(GenerateCycleClasses::class);
+
+        $first = $generator->generate($firstCycle);
+        $second = $generator->generate($secondCycle);
+
+        $this->assertSame(['created' => 1, 'skipped' => 0], $first);
+        $this->assertSame(['created' => 1, 'skipped' => 0], $second);
+        $this->assertDatabaseCount('clases', 2);
+        $this->assertDatabaseHas('clases', ['ciclo_id' => $firstCycle->id, 'horario_id' => $firstSchedule->id]);
+        $this->assertDatabaseHas('clases', ['ciclo_id' => $secondCycle->id, 'horario_id' => $secondSchedule->id]);
+        $this->assertDatabaseMissing('clases', ['ciclo_id' => $firstCycle->id, 'horario_id' => $secondSchedule->id]);
+        $this->assertDatabaseMissing('clases', ['ciclo_id' => $secondCycle->id, 'horario_id' => $firstSchedule->id]);
+    }
+
     public function test_admin_cannot_change_cycle_dates_after_classes_are_generated()
     {
         $admin = $this->yoguini('Admin');
         $cycle = $this->cycle('2026-10-06', '2026-10-20');
         $schedule = $this->schedule(2);
+        $cycle->horarios()->sync([$schedule->id]);
         $this->makeClass($cycle, $schedule, '2026-10-06', '10:00:00');
+        $replacementSchedule = $this->schedule(3);
         $this->actingAs($admin, 'sanctum');
 
         $this->patchJson("/api/booking/admin/cycles/{$cycle->id}", ['fecha_inicio' => '2026-10-07'])
             ->assertUnprocessable()->assertJsonValidationErrors(['fecha_inicio']);
 
+        $this->patchJson("/api/booking/admin/cycles/{$cycle->id}", ['horario_ids' => [$replacementSchedule->id]])
+            ->assertUnprocessable()->assertJsonValidationErrors(['horario_ids']);
+
         $this->assertDatabaseHas('ciclos', ['id' => $cycle->id, 'fecha_inicio' => '2026-10-06']);
+    }
+
+    public function test_admin_can_archive_paused_cycle_after_cancelling_classes_without_erasing_history()
+    {
+        $admin = $this->yoguini('Admin');
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $enrollment = $this->enrollment($student, $cycle);
+        $class = $this->makeClass($cycle, $this->schedule(2), '2026-10-06', '10:00:00');
+        $reservation = $this->reserve($student, $enrollment, $class);
+        $this->actingAs($admin, 'sanctum');
+
+        $this->deleteJson("/api/booking/admin/cycles/{$cycle->id}")->assertStatus(409);
+        $this->patchJson("/api/booking/admin/cycles/{$cycle->id}", ['activo' => false])->assertOk();
+        $this->deleteJson("/api/booking/admin/cycles/{$cycle->id}")->assertStatus(409);
+        $this->patchJson("/api/booking/admin/classes/{$class->id}/cancel")->assertOk();
+        $this->deleteJson("/api/booking/admin/cycles/{$cycle->id}")->assertNoContent();
+
+        $this->assertSoftDeleted('ciclos', ['id' => $cycle->id]);
+        $this->assertDatabaseHas('clases', ['id' => $class->id, 'estado' => 'cancelada']);
+        $this->assertDatabaseHas('reservas', ['id' => $reservation->id, 'estado' => 'cancelada_con_aviso']);
+        $this->assertDatabaseHas('recuperaciones', ['reserva_origen_id' => $reservation->id, 'estado' => 'disponible']);
+        $this->getJson('/api/booking/admin/cycles')->assertOk()->assertJsonMissing(['id' => $cycle->id]);
+
+        $this->actingAs($student, 'sanctum');
+        $this->getJson('/api/booking/me')
+            ->assertOk()
+            ->assertJsonPath('inscripciones.0.ciclo.nombre', 'Cycle');
     }
 
     public function test_admin_can_partially_update_schedule_without_sending_time()
@@ -225,6 +323,131 @@ class CycleBookingTest extends TestCase
         $this->assertDatabaseMissing('recuperaciones', ['reserva_origen_id' => $lateReservation->id]);
     }
 
+    public function test_cancelling_october_thirtieth_a_november_class_creates_a_november_credit()
+    {
+        Configuracion::create(['clave' => 'horas_aviso_minimas', 'valor' => '24']);
+        Carbon::setTestNow(Carbon::parse('2026-10-30 10:00:00', 'UTC'));
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-11-30');
+        $enrollment = $this->enrollment($student, $cycle);
+        $class = $this->makeClass($cycle, $this->schedule(4), '2026-11-05', '10:00:00');
+        $reservation = $this->reserve($student, $enrollment, $class);
+        $this->actingAs($student, 'sanctum');
+
+        $this->postJson("/api/booking/reservations/{$reservation->id}/cancel")
+            ->assertOk()
+            ->assertJsonPath('recuperacion_generada', true);
+
+        $this->assertDatabaseHas('recuperaciones', [
+            'reserva_origen_id' => $reservation->id,
+            'vence_en' => '2026-11-30',
+            'estado' => 'disponible',
+        ]);
+    }
+
+    public function test_enrollment_withdrawal_groups_credits_by_each_source_class_month()
+    {
+        Configuracion::create(['clave' => 'horas_aviso_minimas', 'valor' => '24']);
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-11-30');
+        $enrollment = $this->enrollment($student, $cycle);
+        $octoberReservation = $this->reserve(
+            $student,
+            $enrollment,
+            $this->makeClass($cycle, $this->schedule(2), '2026-10-10', '10:00:00')
+        );
+        $novemberReservation = $this->reserve(
+            $student,
+            $enrollment,
+            $this->makeClass($cycle, $this->schedule(4), '2026-11-05', '10:00:00')
+        );
+        $this->actingAs($student, 'sanctum');
+
+        $this->postJson("/api/booking/enrollments/{$enrollment->id}/cancel")
+            ->assertOk()
+            ->assertJsonPath('creditos_generados', 2)
+            ->assertJsonPath('creditos_por_mes.0.vence_en', '2026-10-31')
+            ->assertJsonPath('creditos_por_mes.0.generados', 1)
+            ->assertJsonPath('creditos_por_mes.1.vence_en', '2026-11-30')
+            ->assertJsonPath('creditos_por_mes.1.generados', 1);
+
+        $this->assertDatabaseHas('recuperaciones', ['reserva_origen_id' => $octoberReservation->id, 'vence_en' => '2026-10-31']);
+        $this->assertDatabaseHas('recuperaciones', ['reserva_origen_id' => $novemberReservation->id, 'vence_en' => '2026-11-30']);
+    }
+
+    public function test_notice_threshold_at_midnight_uses_buenos_aires_timezone()
+    {
+        config(['app.timezone' => 'America/Argentina/Buenos_Aires']);
+        Carbon::setTestNow(Carbon::parse('2026-10-30 00:30:00', 'America/Argentina/Buenos_Aires'));
+        Configuracion::create(['clave' => 'horas_aviso_minimas', 'valor' => '24']);
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $enrollment = $this->enrollment($student, $cycle);
+        $class = $this->makeClass($cycle, $this->schedule(6), '2026-10-31', '00:30:00');
+        $reservation = $this->reserve($student, $enrollment, $class);
+        $this->actingAs($student, 'sanctum');
+
+        $this->postJson("/api/booking/reservations/{$reservation->id}/cancel")
+            ->assertOk()
+            ->assertJsonPath('recuperacion_generada', true);
+
+        $this->assertDatabaseHas('recuperaciones', [
+            'reserva_origen_id' => $reservation->id,
+            'vence_en' => '2026-10-31',
+            'estado' => 'disponible',
+        ]);
+    }
+
+    public function test_student_can_cancel_a_cycle_and_only_future_reservations_are_cancelled()
+    {
+        Configuracion::create(['clave' => 'horas_aviso_minimas', 'valor' => '24']);
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $enrollment = $this->enrollment($student, $cycle);
+        $eligibleReservation = $this->reserve(
+            $student,
+            $enrollment,
+            $this->makeClass($cycle, $this->schedule(2), '2026-10-02', '10:00:00')
+        );
+        $lateReservation = $this->reserve(
+            $student,
+            $enrollment,
+            $this->makeClass($cycle, $this->schedule(3), '2026-10-01', '20:00:00')
+        );
+        $pastReservation = $this->reserve(
+            $student,
+            $enrollment,
+            $this->makeClass($cycle, $this->schedule(4), '2026-10-01', '07:00:00')
+        );
+        $this->actingAs($student, 'sanctum');
+
+        $this->postJson("/api/booking/enrollments/{$enrollment->id}/cancel")
+            ->assertOk()
+            ->assertJsonPath('inscripcion.estado', 'cancelada')
+            ->assertJsonPath('reservas_canceladas', 2)
+            ->assertJsonPath('creditos_generados', 1)
+            ->assertJsonPath('reservas_sin_credito', 1);
+
+        $this->assertDatabaseHas('reservas', ['id' => $eligibleReservation->id, 'estado' => 'cancelada_con_aviso']);
+        $this->assertDatabaseHas('reservas', ['id' => $lateReservation->id, 'estado' => 'cancelada']);
+        $this->assertDatabaseHas('reservas', ['id' => $pastReservation->id, 'estado' => 'reservada']);
+        $this->assertDatabaseHas('recuperaciones', ['reserva_origen_id' => $eligibleReservation->id, 'estado' => 'disponible']);
+        $this->assertDatabaseMissing('recuperaciones', ['reserva_origen_id' => $lateReservation->id]);
+    }
+
+    public function test_student_cannot_cancel_another_users_enrollment()
+    {
+        $owner = $this->yoguini();
+        $student = $this->yoguini();
+        $enrollment = $this->enrollment($owner, $this->cycle('2026-10-01', '2026-10-31'));
+        $this->actingAs($student, 'sanctum');
+
+        $this->postJson("/api/booking/enrollments/{$enrollment->id}/cancel")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('inscripciones', ['id' => $enrollment->id, 'estado' => 'activa']);
+    }
+
     public function test_my_bookings_reports_credit_eligibility_at_the_exact_notice_threshold()
     {
         Configuracion::create(['clave' => 'horas_aviso_minimas', 'valor' => '24']);
@@ -256,7 +479,7 @@ class CycleBookingTest extends TestCase
         $sourceCycle = $this->cycle('2026-10-01', '2026-10-31');
         $sourceEnrollment = $this->enrollment($student, $sourceCycle);
         $schedule = $this->schedule(2);
-        $sourceClass = $this->makeClass($sourceCycle, $schedule, '2026-09-29', '10:00:00');
+        $sourceClass = $this->makeClass($sourceCycle, $schedule, '2026-10-02', '10:00:00');
         $sourceReservation = $this->reserve($student, $sourceEnrollment, $sourceClass, 'cancelada_con_aviso');
         $credit = $this->credit($student, $sourceEnrollment, $sourceReservation, '2026-10-31');
 
@@ -286,12 +509,37 @@ class CycleBookingTest extends TestCase
         $occupant = $this->yoguini();
         $occupantEnrollment = $this->enrollment($occupant, $destinationCycle);
         $this->reserve($occupant, $occupantEnrollment, $fullDestination);
-        $capacitySourceClass = $this->makeClass($sourceCycle, $schedule, '2026-09-27', '10:00:00');
+        $capacitySourceClass = $this->makeClass($sourceCycle, $schedule, '2026-10-04', '10:00:00');
         $capacityReservation = $this->reserve($student, $sourceEnrollment, $capacitySourceClass, 'cancelada_con_aviso');
         $capacityCredit = $this->credit($student, $sourceEnrollment, $capacityReservation, '2026-10-31');
         $this->postJson("/api/booking/recoveries/{$capacityCredit->id}/book", ['clase_id' => $fullDestination->id])
             ->assertUnprocessable()->assertJsonValidationErrors(['clase_id']);
         $this->assertSame('disponible', $capacityCredit->fresh()->estado);
+    }
+
+    public function test_recovery_rejects_destinations_outside_credit_month_reserved_cancelled_and_past()
+    {
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-12-31');
+        $enrollment = $this->enrollment($student, $cycle);
+        $sourceClass = $this->makeClass($cycle, $this->schedule(2), '2026-11-05', '10:00:00');
+        $sourceReservation = $this->reserve($student, $enrollment, $sourceClass, 'cancelada_con_aviso');
+        $credit = $this->credit($student, $enrollment, $sourceReservation, '2026-11-30');
+        $reservedDestination = $this->makeClass($cycle, $this->schedule(3), '2026-11-10', '10:00:00');
+        $this->reserve($student, $enrollment, $reservedDestination);
+        $cancelledDestination = $this->makeClass($cycle, $this->schedule(4), '2026-11-12', '10:00:00', ['estado' => 'cancelada']);
+        $pastDestination = $this->makeClass($cycle, $this->schedule(5), '2026-09-30', '10:00:00');
+        $octoberDestination = $this->makeClass($cycle, $this->schedule(6), '2026-10-20', '10:00:00');
+        $decemberDestination = $this->makeClass($cycle, $this->schedule(1), '2026-12-05', '10:00:00');
+        $this->actingAs($student, 'sanctum');
+
+        foreach ([$octoberDestination, $decemberDestination, $reservedDestination, $cancelledDestination, $pastDestination] as $destination) {
+            $this->postJson("/api/booking/recoveries/{$credit->id}/book", ['clase_id' => $destination->id])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['clase_id']);
+        }
+
+        $this->assertSame('disponible', $credit->fresh()->estado);
     }
 
     public function test_recovery_class_options_include_future_classes_from_inactive_cycles()
@@ -360,7 +608,7 @@ class CycleBookingTest extends TestCase
         $cycle = $this->cycle('2026-10-01', '2026-10-31');
         $enrollment = $this->enrollment($owner, $cycle);
         $schedule = $this->schedule(2);
-        $sourceClass = $this->makeClass($cycle, $schedule, '2026-09-29', '10:00:00');
+        $sourceClass = $this->makeClass($cycle, $schedule, '2026-10-02', '10:00:00');
         $sourceReservation = $this->reserve($owner, $enrollment, $sourceClass, 'cancelada_con_aviso');
         $credit = $this->credit($owner, $enrollment, $sourceReservation, '2026-10-31');
         $destination = $this->makeClass($cycle, $this->schedule(4), '2026-10-08', '12:00:00');
@@ -383,8 +631,8 @@ class CycleBookingTest extends TestCase
         $studentEnrollment = $this->enrollment($student, $cycle);
         $otherEnrollment = $this->enrollment($otherStudent, $cycle);
         $schedule = $this->schedule(2);
-        $studentOrigin = $this->reserve($student, $studentEnrollment, $this->makeClass($cycle, $schedule, '2026-09-29', '10:00:00'), 'cancelada_con_aviso');
-        $otherOrigin = $this->reserve($otherStudent, $otherEnrollment, $this->makeClass($cycle, $this->schedule(3), '2026-09-30', '11:00:00'), 'cancelada_con_aviso');
+        $studentOrigin = $this->reserve($student, $studentEnrollment, $this->makeClass($cycle, $schedule, '2026-10-01', '07:00:00'), 'cancelada_con_aviso');
+        $otherOrigin = $this->reserve($otherStudent, $otherEnrollment, $this->makeClass($cycle, $this->schedule(3), '2026-10-01', '07:30:00'), 'cancelada_con_aviso');
         $studentCredit = $this->credit($student, $studentEnrollment, $studentOrigin, '2026-10-31');
         $this->credit($otherStudent, $otherEnrollment, $otherOrigin, '2026-10-31');
         $this->actingAs($student, 'sanctum');
@@ -394,7 +642,7 @@ class CycleBookingTest extends TestCase
             ->assertJsonCount(1)
             ->assertJsonPath('0.id', $studentCredit->id)
             ->assertJsonPath('0.vence_en', '2026-10-31')
-            ->assertJsonPath('0.reserva_origen.clase.fecha', '2026-09-29');
+            ->assertJsonPath('0.reserva_origen.clase.fecha', '2026-10-01');
     }
 
     public function test_admin_cancels_class_once_and_issues_one_credit_per_reservation()
@@ -418,6 +666,40 @@ class CycleBookingTest extends TestCase
         $this->assertDatabaseHas('reservas', ['id' => $reservation->id, 'estado' => 'cancelada_con_aviso']);
         $this->assertDatabaseHas('reservas', ['id' => $attendedReservation->id, 'estado' => 'cancelada_con_aviso']);
         $this->assertDatabaseCount('recuperaciones', 2);
+    }
+
+    public function test_admin_cancelling_a_november_class_in_october_creates_a_november_credit()
+    {
+        $admin = $this->yoguini('Admin');
+        $student = $this->yoguini();
+        $cycle = $this->cycle('2026-10-01', '2026-11-30');
+        $enrollment = $this->enrollment($student, $cycle);
+        $class = $this->makeClass($cycle, $this->schedule(4), '2026-11-05', '10:00:00');
+        $reservation = $this->reserve($student, $enrollment, $class);
+        $this->actingAs($admin, 'sanctum');
+
+        $this->patchJson("/api/booking/admin/classes/{$class->id}/cancel")->assertOk();
+
+        $this->assertDatabaseHas('recuperaciones', [
+            'reserva_origen_id' => $reservation->id,
+            'vence_en' => '2026-11-30',
+            'estado' => 'disponible',
+        ]);
+    }
+
+    public function test_admin_cannot_cancel_a_class_after_its_start_time()
+    {
+        $admin = $this->yoguini('Admin');
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $class = $this->makeClass($cycle, $this->schedule(2), '2026-10-01', '07:59:00');
+        $this->actingAs($admin, 'sanctum');
+
+        $this->patchJson("/api/booking/admin/classes/{$class->id}/cancel")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['clase']);
+
+        $this->assertDatabaseHas('clases', ['id' => $class->id, 'estado' => 'programada']);
+        $this->assertDatabaseCount('recuperaciones', 0);
     }
 
     public function test_admin_can_filter_classes_and_fetch_class_reservations()
@@ -476,9 +758,41 @@ class CycleBookingTest extends TestCase
 
     public function test_admin_routes_reject_non_admin_users()
     {
-        $this->actingAs($this->yoguini('user'), 'sanctum')
-            ->getJson('/api/booking/admin/cycles')
-            ->assertForbidden();
+        $student = $this->yoguini('user');
+        $cycle = $this->cycle('2026-10-01', '2026-10-31');
+        $schedule = $this->schedule(2);
+        $class = $this->makeClass($cycle, $schedule, '2026-10-06', '10:00:00');
+        $enrollment = $this->enrollment($student, $cycle);
+        $this->reserve($student, $enrollment, $class);
+        Feriado::create(['fecha' => '2026-10-10', 'descripcion' => 'Authorization test']);
+        $routes = collect(Route::getRoutes()->getRoutes())
+            ->filter(function ($route) {
+                return strpos($route->uri(), 'api/booking/admin/') === 0;
+            })
+            ->flatMap(function ($route) {
+                $uri = '/'.preg_replace('/\{[^}]+\??\}/', '1', $route->uri());
+                return collect($route->methods())
+                    ->filter(function ($method) {
+                        return in_array($method, ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], true);
+                    })
+                    ->map(function ($method) use ($uri) {
+                        return [$method, $uri];
+                    });
+            })
+            ->values();
+        $this->assertNotEmpty($routes);
+
+        foreach ($routes as [$method, $uri]) {
+            $this->call($method, $uri, [], [], [], ['HTTP_ACCEPT' => 'application/json'])
+                ->assertUnauthorized();
+        }
+
+        foreach ($routes as [$method, $uri]) {
+            $this->actingAs($student, 'sanctum')
+                ->call($method, $uri, [], [], [], ['HTTP_ACCEPT' => 'application/json'])
+                ->assertForbidden();
+        }
+
         $this->getJson('/api/yoguinis')->assertForbidden();
     }
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Clase;
 use App\Models\Configuracion;
+use App\Models\Inscripcion;
 use App\Models\Recuperacion;
 use App\Models\Reserva;
 use App\Models\Yoguini;
@@ -26,43 +27,143 @@ class ReservaService
             }
 
             $now = Carbon::now(config('app.timezone'));
-            $startsAt = $this->classStart($class);
             $noticeHours = (int) (Configuracion::where('clave', 'horas_aviso_minimas')->value('valor') ?? 24);
-            $withNotice = $startsAt->greaterThanOrEqualTo($now->copy()->addHours($noticeHours));
-            $reservation->estado = $withNotice ? 'cancelada_con_aviso' : 'cancelada';
-            $reservation->save();
-
-            if ($withNotice) {
-                if ($reservation->tipo === 'recuperacion') {
-                    $credit = Recuperacion::where('reserva_destino_id', $reservation->id)
-                        ->lockForUpdate()
-                        ->first();
-                    if ($credit && $credit->estado === 'usada' && !$credit->vence_en->lt($this->today())) {
-                        $credit->estado = 'disponible';
-                        $credit->reserva_destino_id = null;
-                        $credit->save();
-                    }
-                } else {
-                    Recuperacion::firstOrCreate(
-                        ['reserva_origen_id' => $reservation->id],
-                        [
-                            'user_id' => $yoguini->id,
-                            'inscripcion_id' => $reservation->inscripcion_id,
-                            'vence_en' => $now->copy()->endOfMonth()->toDateString(),
-                            'estado' => 'disponible',
-                        ]
-                    );
-                }
-            }
+            $this->cancelLockedReservation($yoguini, $reservation, $class, $now, $noticeHours);
 
             return $reservation->fresh(['clase', 'recuperacionGenerada']);
         });
+    }
+
+    public function cancelEnrollment(Yoguini $yoguini, Inscripcion $inscripcion)
+    {
+        return DB::transaction(function () use ($yoguini, $inscripcion) {
+            $inscripcion = Inscripcion::whereKey($inscripcion->id)->lockForUpdate()->firstOrFail();
+            if ((int) $inscripcion->user_id !== (int) $yoguini->id) {
+                $this->fail('inscripcion', 'This enrollment does not belong to the authenticated user.', 403);
+            }
+            if ($inscripcion->estado !== 'activa') {
+                $this->fail('inscripcion', 'Only active enrollments can be cancelled.');
+            }
+
+            $now = Carbon::now(config('app.timezone'));
+            $noticeHours = (int) (Configuracion::where('clave', 'horas_aviso_minimas')->value('valor') ?? 24);
+            $classes = Clase::where('ciclo_id', $inscripcion->ciclo_id)
+                ->where('estado', 'programada')
+                ->where(function ($query) use ($now) {
+                    $query->whereDate('fecha', '>', $now->toDateString())
+                        ->orWhere(function ($today) use ($now) {
+                            $today->whereDate('fecha', $now->toDateString())
+                                ->where('hora_inicio', '>', $now->format('H:i:s'));
+                        });
+                })
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+            $reservations = Reserva::where('inscripcion_id', $inscripcion->id)
+                ->whereIn('clase_id', $classes->pluck('id'))
+                ->where('estado', 'reservada')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+            $classesById = $classes->keyBy('id');
+            $creditsGenerated = 0;
+            $creditsReturned = 0;
+            $withoutCredit = 0;
+            $creditsByExpiry = [];
+
+            foreach ($reservations as $reservation) {
+                $result = $this->cancelLockedReservation(
+                    $yoguini,
+                    $reservation,
+                    $classesById->get($reservation->clase_id),
+                    $now,
+                    $noticeHours
+                );
+                $creditsGenerated += $result['credit_generated'] ? 1 : 0;
+                $creditsReturned += $result['credit_returned'] ? 1 : 0;
+                $withoutCredit += $result['with_notice'] ? 0 : 1;
+                if (($result['credit_generated'] || $result['credit_returned']) && $result['credit_expiry']) {
+                    $expiry = $result['credit_expiry'];
+                    if (!isset($creditsByExpiry[$expiry])) {
+                        $creditsByExpiry[$expiry] = [
+                            'vence_en' => $expiry,
+                            'generados' => 0,
+                            'devueltos' => 0,
+                        ];
+                    }
+                    $creditsByExpiry[$expiry]['generados'] += $result['credit_generated'] ? 1 : 0;
+                    $creditsByExpiry[$expiry]['devueltos'] += $result['credit_returned'] ? 1 : 0;
+                }
+            }
+            ksort($creditsByExpiry);
+
+            $inscripcion->estado = 'cancelada';
+            $inscripcion->save();
+
+            return [
+                'inscripcion' => $inscripcion->fresh('ciclo'),
+                'reservas_canceladas' => $reservations->count(),
+                'creditos_generados' => $creditsGenerated,
+                'creditos_devueltos' => $creditsReturned,
+                'reservas_sin_credito' => $withoutCredit,
+                'creditos_por_mes' => array_values($creditsByExpiry),
+            ];
+        });
+    }
+
+    private function cancelLockedReservation(Yoguini $yoguini, Reserva $reservation, Clase $class, Carbon $now, $noticeHours)
+    {
+        $withNotice = $this->classStart($class)->greaterThanOrEqualTo($now->copy()->addHours($noticeHours));
+        $reservation->estado = $withNotice ? 'cancelada_con_aviso' : 'cancelada';
+        $reservation->save();
+        $creditGenerated = false;
+        $creditReturned = false;
+        $creditExpiry = null;
+
+        if ($withNotice && $reservation->tipo === 'recuperacion') {
+            $credit = Recuperacion::where('reserva_destino_id', $reservation->id)
+                ->lockForUpdate()
+                ->first();
+            if ($credit && $credit->estado === 'usada' && !$credit->vence_en->lt($this->today())) {
+                $credit->estado = 'disponible';
+                $credit->reserva_destino_id = null;
+                $credit->save();
+                $creditReturned = true;
+                $creditExpiry = $credit->vence_en->toDateString();
+            }
+        } elseif ($withNotice) {
+            $expiresAt = $this->classStart($class)->endOfMonth()->toDateString();
+            $credit = Recuperacion::firstOrCreate(
+                ['reserva_origen_id' => $reservation->id],
+                [
+                    'user_id' => $yoguini->id,
+                    'inscripcion_id' => $reservation->inscripcion_id,
+                    'vence_en' => $expiresAt,
+                    'estado' => 'disponible',
+                ]
+            );
+            $creditGenerated = $credit->wasRecentlyCreated;
+            if ($creditGenerated) {
+                $creditExpiry = $expiresAt;
+            }
+        }
+
+        return [
+            'with_notice' => $withNotice,
+            'credit_generated' => $creditGenerated,
+            'credit_returned' => $creditReturned,
+            'credit_expiry' => $creditExpiry,
+        ];
     }
 
     public function cancelClass(Clase $class)
     {
         return DB::transaction(function () use ($class) {
             $class = Clase::whereKey($class->id)->lockForUpdate()->firstOrFail();
+            $now = Carbon::now(config('app.timezone'));
+            if (!$this->classStart($class)->gt($now)) {
+                $this->fail('clase', 'A class cannot be cancelled after its scheduled start time.');
+            }
             if ($class->estado === 'cancelada') {
                 return $class->load('reservas');
             }
@@ -77,7 +178,6 @@ class ReservaService
                 ->orderBy('id')
                 ->lockForUpdate()
                 ->get();
-            $expiry = Carbon::now(config('app.timezone'))->endOfMonth()->toDateString();
 
             foreach ($reservations as $reservation) {
                 $reservation->estado = 'cancelada_con_aviso';
@@ -94,6 +194,7 @@ class ReservaService
                     continue;
                 }
 
+                $expiry = $this->classStart($class)->endOfMonth()->toDateString();
                 Recuperacion::firstOrCreate(
                     ['reserva_origen_id' => $reservation->id],
                     [

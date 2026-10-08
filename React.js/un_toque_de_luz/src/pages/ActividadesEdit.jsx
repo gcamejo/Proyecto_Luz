@@ -6,6 +6,7 @@ import { useForm } from '../hooks/useForm'
 import { Link } from 'react-router-dom'
 import UploadFile from '../components/UploadFile'
 import { BsArrowLeft } from 'react-icons/bs'
+import { apiAssetUrl } from '../api/axios'
 
 import '../Styles/Actividades.css'
 
@@ -52,7 +53,7 @@ const ActividadesEdit = () => {
   }, [dispatch, id, setValues])
 
   const {urlImagen, titulo, descripcion, horarios} = values
-  const img = urlImagen ? `http://localhost:8000/storage/img/${urlImagen}` : null
+  const img = urlImagen ? apiAssetUrl(`storage/img/${encodeURIComponent(urlImagen)}`) : null
 
   const handleSubmit = async (e) =>{
     e.preventDefault()

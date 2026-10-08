@@ -1,9 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
+import axios from '../api/axios'
 import useSWR from 'swr'
 import fetcher from '../api/fetcher'
 import '../Styles/Reservas.css'
 
 const reservationStates = new Set(['reservada', 'asistio', 'falto'])
+const fetchClasses = async ([url, params]) => {
+  const { data } = await axios.get(url, { params })
+  return data
+}
 
 const requestError = error => {
   const validation = error.response?.data?.errors
@@ -25,7 +30,15 @@ const reservationLabel = state => ({
 }[state] || state)
 
 const TurnosClases = () => {
-  const { data: classes = [], error, isLoading } = useSWR('api/booking/admin/classes', fetcher)
+  const [cycleId, setCycleId] = useState('')
+  const { data: cycles = [], error: cyclesError, isLoading: cyclesLoading } = useSWR('api/booking/admin/cycles', fetcher)
+  const classParams = cycleId ? { ciclo_id: cycleId } : {}
+  const { data: classes = [], error: classesError, isLoading: classesLoading } = useSWR(
+    ['api/booking/admin/classes', classParams],
+    fetchClasses
+  )
+  const error = cyclesError || classesError
+  const isLoading = cyclesLoading || classesLoading
   const classesWithStudents = classes
     .map(classItem => ({
       ...classItem,
@@ -42,8 +55,16 @@ const TurnosClases = () => {
       </header>
 
       {error && <p className='booking-message booking-message-error' role='alert'>{requestError(error)}</p>}
+      <div className='booking-class-filters'>
+        <label htmlFor='turnos-cycle-filter'>Ciclo
+          <select id='turnos-cycle-filter' value={cycleId} onChange={event => setCycleId(event.target.value)}>
+            <option value=''>Todos los ciclos</option>
+            {cycles.map(cycle => <option value={cycle.id} key={cycle.id}>{cycle.nombre}</option>)}
+          </select>
+        </label>
+      </div>
       {isLoading ? <p className='booking-message' role='status'>Cargando clases...</p> : classesWithStudents.length === 0 ? (
-        <p className='booking-empty'>No hay clases con alumnos reservados.</p>
+        <p className='booking-empty'>{cycleId ? 'Este ciclo no tiene clases con alumnos reservados.' : 'No hay clases con alumnos reservados.'}</p>
       ) : (
         <div className='booking-readonly-class-list'>
           {classesWithStudents.map(classItem => (

@@ -75,7 +75,7 @@ class BookingAdminController extends Controller
     public function deleteCycle(Ciclo $ciclo, CicloService $ciclos)
     {
         if (!$ciclos->delete($ciclo)) {
-            return response()->json(['message' => 'A cycle with generated classes or enrollments cannot be deleted.'], 409);
+            return response()->json(['message' => 'Pause the cycle and cancel all programmed classes before removing it from administration.'], 409);
         }
         return response()->json(null, 204);
     }

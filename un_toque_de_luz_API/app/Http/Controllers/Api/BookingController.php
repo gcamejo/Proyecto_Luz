@@ -12,6 +12,7 @@ use App\Http\Resources\Booking\ReservaResource;
 use App\Models\Clase;
 use App\Models\Ciclo;
 use App\Models\Configuracion;
+use App\Models\Inscripcion;
 use App\Models\Recuperacion;
 use App\Models\Reserva;
 use App\Services\InscripcionService;
@@ -117,6 +118,13 @@ class BookingController extends Controller
             'recuperacion_generada' => (bool) $cancelled->recuperacionGenerada,
             'credito_devuelto' => $recoveryCredit && $recoveryCredit->fresh()->estado === 'disponible',
         ]);
+    }
+
+    public function cancelEnrollment(Request $request, Inscripcion $inscripcion, ReservaService $reservas)
+    {
+        $this->authorize('cancel', $inscripcion);
+
+        return response()->json($reservas->cancelEnrollment($request->user(), $inscripcion));
     }
 
     public function bookRecovery(BookRecoveryRequest $request, Recuperacion $recuperacion, RecuperacionService $recuperaciones)

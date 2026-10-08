@@ -21,6 +21,8 @@ class CycleRequest extends FormRequest
             'fecha_inicio' => $required.'|date',
             'fecha_fin' => $required.'|date'.$dateEndRule,
             'clases_por_semana' => $required.'|integer|between:1,7',
+            'horario_ids' => $this->isMethod('post') ? 'required|array|min:1' : 'sometimes|required|array|min:1',
+            'horario_ids.*' => 'required|integer|distinct|exists:horarios,id',
             'precio' => $required.'|numeric|min:0|max:99999999.99',
             'activo' => 'sometimes|boolean',
         ];

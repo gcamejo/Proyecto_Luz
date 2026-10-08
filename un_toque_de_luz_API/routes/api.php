@@ -60,6 +60,7 @@ Route::middleware('auth:sanctum')->prefix('booking')->group(function () {
     Route::get('/me', [BookingController::class, 'myBookings']);
     Route::get('/credits', [BookingController::class, 'myCredits']);
     Route::post('/cycles/{ciclo}/enroll', [BookingController::class, 'enroll']);
+    Route::post('/enrollments/{inscripcion}/cancel', [BookingController::class, 'cancelEnrollment']);
     Route::post('/reservations/{reserva}/cancel', [BookingController::class, 'cancelReservation']);
     Route::get('/recoveries/available-classes', [BookingController::class, 'recoveryClasses']);
     Route::post('/recoveries/{recuperacion}/book', [BookingController::class, 'bookRecovery']);

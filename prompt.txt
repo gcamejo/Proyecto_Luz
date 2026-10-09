@@ -1,0 +1,4 @@
+quiero agragar un boton de "Quiero comenzar yoga", que es la actividad principal, 
+- al presionar el boton lo dirija a una pantalla con informacion, los ciclos de clases vigentes
+- en esta pantalla un boton de registrarse y dirigirlo a reservar clase y otro de volver
+- cada vez que se registre un usuario avisar al administrador

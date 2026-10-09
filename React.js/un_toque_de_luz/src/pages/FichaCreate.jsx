@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { createFicha } from '../store/Slice/Yoguinis/yoguinis'
 import '../Styles/Yoguinis.css'
+import { safeInternalRedirect } from '../utils/safeInternalRedirect'
 
 const errorMessage = error => {
   const validationErrors = error.response?.data?.errors
@@ -11,9 +12,11 @@ const errorMessage = error => {
 
 const FichaCreate = () => {
   const dispatch = useDispatch()
+  const location = useLocation()
   const navigate = useNavigate()
   const { token } = useSelector(state => state.token)
   const isAdminCreate = Boolean(token)
+  const postRegistrationPath = safeInternalRedirect(new URLSearchParams(location.search).get('redirect'))
   const [values, setValues] = useState({
     nombre: '', apellido: '', direccion: '', numero: '', telefono: '',
     fechaNacimiento: '', email: '', password: '', perfil: 'user'
@@ -36,7 +39,7 @@ const FichaCreate = () => {
     try {
       const { repassword, ...payload } = { ...values, perfil: 'user' }
       await dispatch(createFicha(payload))
-      navigate(isAdminCreate ? '/verFichas' : '/login')
+      navigate(isAdminCreate ? '/verFichas' : postRegistrationPath === '/' ? '/login' : `/login?redirect=${encodeURIComponent(postRegistrationPath)}`)
     } catch (requestError) {
       setError(errorMessage(requestError))
     } finally {

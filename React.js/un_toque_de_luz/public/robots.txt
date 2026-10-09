@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /cargarFicha
+Disallow: /reservarCiclo
+Disallow: /misReservas
+Disallow: /admin
+Disallow: /verFichas
+Disallow: /verTurnos
+Disallow: /cargarTurno
+Disallow: /editar
+Disallow: /borrar
+Disallow: /nuevaActividad
+
+Sitemap: https://untoquedeluz.com.ar/sitemap.xml

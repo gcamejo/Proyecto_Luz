@@ -3,6 +3,7 @@ import { BsPencilSquare, BsTrash, BsWhatsapp } from 'react-icons/bs'
 import { Link } from 'react-router-dom'
 import { deleteActividad } from '../store/Slice/actividades/actividades'
 import { apiAssetUrl } from '../api/axios'
+import WhatsAppLink from './WhatsAppLink'
 
 import '../Styles/Actividades.css'
 
@@ -18,6 +19,7 @@ const [deleting, setDeleting] = useState(false)
 const [deleteError, setDeleteError] = useState(null)
 
 const urlImagen = apiAssetUrl(`storage/img/${encodeURIComponent(name)}`)
+const usesCycleBooking = /yoga/i.test(tit || '')
 
 const borrarActividad = async (e) =>{
   e.preventDefault()
@@ -53,10 +55,14 @@ const borrarActividad = async (e) =>{
                 <BsTrash aria-hidden='true' />
                 <span>Eliminar</span>
               </button>
-            </> : <Link className='actividades-action actividades-action-book' to='/'>
-              <BsWhatsapp aria-hidden='true' />
-              <span>Solicitar turno</span>
-            </Link>}
+            </> : usesCycleBooking ? <Link className='actividades-action actividades-action-book' to='/comenzar-yoga'>
+              <span>Ver ciclos de Yoga</span>
+            </Link> : <WhatsAppLink
+              className='actividades-action actividades-action-book'
+              activityName={tit}
+              label='Solicitar turno'
+              ariaLabel={`Solicitar turno por WhatsApp para ${tit}`}
+            />}
           </div>
         </div>
       </article>

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Yoguini;
+use App\Services\RegistrationNotifier;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -53,6 +54,11 @@ class YoguiniController extends Controller
         $Yoguini->password = Hash::make($validated['password']);
         $Yoguini->perfil = 'user';
         $Yoguini->save();
+
+        $registeredAt = now(config('app.timezone'))->toIso8601String();
+        app()->terminating(function () use ($Yoguini, $registeredAt) {
+            app(RegistrationNotifier::class)->notifyAdmins($Yoguini, $registeredAt);
+        });
 
         return response()->json($Yoguini->makeHidden(['password']), 201);
     }

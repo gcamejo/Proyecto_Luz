@@ -43,7 +43,7 @@ Reglas clave:
 - no se generan clases en feriados
 - no se duplican clases si se vuelve a ejecutar la generación
 - solo se consideran horarios asignados al ciclo; horarios activos no seleccionados quedan fuera
-- se valida que una fecha/horario no pertenezca a otro ciclo
+- se rechaza una fecha/horario si ya tiene una clase no cancelada de otro ciclo; un espacio ocupado solo por clases canceladas puede reutilizarse en un ciclo nuevo, sin borrar clases ni reservas históricas
 - se acepta un ciclo de un solo día, siempre que la lógica de fechas lo soporte
 
 ### 3) Inscripción y cupos
@@ -340,5 +340,15 @@ El certificado, la redirección, el cron de renovación, DNS, firewall, proxies 
 
 ### Verificación local actual
 
-- `.env` apunta la API a `http://localhost:8000` y permite el origen `http://localhost:5173`; Sanctum stateful queda vacío porque React envía Bearer tokens.
-- El preflight CORS local devolvió `204` con el origen correcto y autorización Bearer permitida; `GET /api/actividades` devolvió `200` con una actividad.
+- `.env` apunta la API a `http://localhost:8000` y permite el origen `http://127.0.0.1:5174`; Vite usó ese puerto porque `5173` ya estaba ocupado. Sanctum stateful queda vacío porque React envía Bearer tokens.
+- El preflight CORS para `127.0.0.1:5174` devolvió `204`; `GET /api/public/yoga/cycles` devolvió `200` con ciclos públicos. El frontend también respondió `200`.
+
+## Presentación pública de Yoga y avisos de registro
+
+- La portada incluye el CTA destacado “Quiero comenzar yoga” y `/yoga` muestra información editable desde `React.js/un_toque_de_luz/src/content/yogaPageContent.js` junto con los ciclos públicos.
+- `GET /api/public/yoga/cycles` no requiere autenticación, tiene límite propio y solo expone ciclos activos no vencidos con clases futuras programadas, día/hora y disponibilidad; no serializa inscripciones ni datos personales.
+- El registro está limitado a cinco solicitudes por minuto. Al terminar la respuesta, se crean notificaciones de base de datos para cada admin y se envía email solo si `ADMIN_NOTIFICATION_EMAIL` está configurado. Los errores se registran sin incluir valores sensibles, y los reintentos del mismo ID no duplican ambos canales.
+- El panel admin consulta el contador/listado y permite marcar registros como leídos. Ambas rutas requieren Sanctum y el middleware `admin`.
+- Las actividades fuera del sistema de ciclos y la página `/comenzar-yoga` ofrecen un contacto secundario por WhatsApp si `VITE_WHATSAPP_NUMBER` está configurada con dígitos solamente. Estas solicitudes se abren fuera de la app y no quedan registradas en el sistema.
+- La migración `2026_10_09_120000_create_notifications_table.php` quedó aplicada en la base local `un_toque_de_luz`; no se hicieron cambios de servidor de producción.
+- Verificación de esta entrega: `php artisan test` -> 45 aprobados, 1 omitido de concurrencia; `npm test` -> 2 aprobados; `npm run build` -> correcto.

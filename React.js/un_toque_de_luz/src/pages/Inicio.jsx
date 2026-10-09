@@ -1,19 +1,21 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import '../Styles/Inicio.css'
+import { yogaPageContent } from '../content/yogaPageContent'
 
 const Inicio = () => {
   return (
     <div className="inicio-page">
       <section className="inicio-hero">
         <div className="inicio-hero-content">
-          <p className="inicio-eyebrow">Yoga · bienestar · encuentro</p>
+          <p className="inicio-eyebrow">Yoga · constelaciones · cuencos · respiraciones</p>
           <h1>Un toque de Luz para volver a vos.</h1>
           <p className="inicio-intro">
             Un espacio para respirar, moverte y encontrar un momento de calma en medio de la rutina.
           </p>
           <div className="inicio-actions">
-            <Link className="inicio-button inicio-button-primary" to="/actividades">Conocé las actividades</Link>
+            <Link className="inicio-button inicio-button-primary" to="/comenzar-yoga">{yogaPageContent.homeCta}</Link>
+            <Link className="inicio-button inicio-button-secondary" to="/actividades">Conocé las actividades</Link>
             <Link className="inicio-button inicio-button-secondary" to="/login">Ingresar</Link>
           </div>
         </div>

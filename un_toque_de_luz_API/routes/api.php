@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\ActividadController;
+use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\BookingAdminController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\PublicYogaCyclesController;
 use App\Http\Controllers\Api\YoguiniController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -23,9 +25,15 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/login', [YoguiniController::class , 'login']);
-Route::post('/yoguinis',[YoguiniController::class , 'store'] );
+Route::post('/yoguinis', [YoguiniController::class, 'store'])->middleware('throttle:registration');
+Route::get('/public/yoga/cycles', [PublicYogaCyclesController::class, 'index'])->middleware('throttle:public-yoga-cycles');
 
 Route::get('/actividades',[ActividadController::class,'index']);
+
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/notifications')->group(function () {
+    Route::get('/', [AdminNotificationController::class, 'index']);
+    Route::post('/{notificationId}/read', [AdminNotificationController::class, 'markRead']);
+});
 
 
 

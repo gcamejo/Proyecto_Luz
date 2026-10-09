@@ -67,6 +67,38 @@ class CycleBookingTest extends TestCase
         ]);
     }
 
+    public function test_generation_reuses_a_cancelled_class_slot_without_deleting_its_history()
+    {
+        $student = $this->yoguini();
+        $schedule = $this->schedule(3);
+        $archivedCycle = $this->cycle('2026-10-08', '2026-10-31');
+        $archivedCycle->update(['activo' => false]);
+        $enrollment = $this->enrollment($student, $archivedCycle);
+        $cancelledClass = $this->makeClass($archivedCycle, $schedule, '2026-10-14', '10:00:00', [
+            'estado' => 'cancelada',
+        ]);
+        $reservation = $this->reserve($student, $enrollment, $cancelledClass, 'cancelada_con_aviso');
+        $archivedCycle->delete();
+
+        $replacementCycle = $this->cycle('2026-10-14', '2026-10-31');
+        $replacementCycle->horarios()->sync([$schedule->id]);
+        $result = app(GenerateCycleClasses::class)->generate($replacementCycle);
+
+        $this->assertSame(['created' => 3, 'skipped' => 0], $result);
+        $this->assertSame('cancelada', $cancelledClass->fresh()->estado);
+        $this->assertDatabaseHas('reservas', [
+            'id' => $reservation->id,
+            'clase_id' => $cancelledClass->id,
+            'estado' => 'cancelada_con_aviso',
+        ]);
+        $this->assertDatabaseHas('clases', [
+            'ciclo_id' => $replacementCycle->id,
+            'horario_id' => $schedule->id,
+            'fecha' => '2026-10-14',
+            'estado' => 'programada',
+        ]);
+    }
+
     public function test_generation_rejects_a_schedule_date_owned_by_another_cycle()
     {
         $schedule = $this->schedule(2);

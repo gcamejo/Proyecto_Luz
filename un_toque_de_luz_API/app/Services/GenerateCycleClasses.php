@@ -59,18 +59,27 @@ class GenerateCycleClasses
                 }
 
                 foreach ($schedules->get($date->dayOfWeek, collect()) as $schedule) {
-                    $existing = Clase::where('horario_id', $schedule->id)
+                    $existingInCycle = Clase::where('ciclo_id', $ciclo->id)
+                        ->where('horario_id', $schedule->id)
                         ->whereDate('fecha', $dateString)
+                        ->lockForUpdate()
                         ->first();
 
-                    if ($existing) {
-                        if ((int) $existing->ciclo_id !== (int) $ciclo->id) {
-                            throw ValidationException::withMessages([
-                                'horarios' => ["Schedule {$schedule->id} on {$dateString} already belongs to another cycle."],
-                            ]);
-                        }
+                    if ($existingInCycle) {
                         $skipped++;
                         continue;
+                    }
+
+                    $activeConflict = Clase::where('horario_id', $schedule->id)
+                        ->whereDate('fecha', $dateString)
+                        ->where('estado', '!=', 'cancelada')
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($activeConflict) {
+                        throw ValidationException::withMessages([
+                            'horarios' => ["Schedule {$schedule->id} on {$dateString} already belongs to another cycle."],
+                        ]);
                     }
 
                     Clase::create([

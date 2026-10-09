@@ -7,6 +7,7 @@ import '../Styles/Navbar.css'
 
 
 import Navbar from "../components/Navbar"
+import RouteSeo from "../components/RouteSeo"
 
 
 import Inicio from "./Inicio"
@@ -31,6 +32,7 @@ import BookingStudent from "./BookingStudent"
 import BookingAdmin from "./BookingAdmin"
 import MyBookings from "./MyBookings"
 import TurnosClases from "./TurnosClases"
+import YogaProgram from "./YogaProgram"
 
 
 
@@ -46,7 +48,7 @@ return (
 
   
   <BrowserRouter>
-    
+    <RouteSeo/>
           <header>
 
               <Navbar/>
@@ -57,6 +59,8 @@ return (
                 <Routes >
                   <Route path="*" element={<RutaNovalida/>}/>
                   <Route path="/" element={<Inicio/>}/>
+                  <Route path="/comenzar-yoga" element={<YogaProgram/>}/>
+                  <Route path="/yoga" element={<YogaProgram/>}/>
                   <Route path="/actividades" element={<Actividades admin={false}/>}/>
                   <Route path="/login" element={<Login/>}/>
                   <Route path="/cargarFicha/" element={<FichaCreate/>}/>

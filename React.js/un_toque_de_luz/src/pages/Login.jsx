@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Loading from '../components/Loading'
 import { useForm } from '../hooks/useForm'
 import { setCodigo, setError, validarUsuario } from '../store/Slice/loginUsuario/loginUsuario'
+import { safeInternalRedirect } from '../utils/safeInternalRedirect'
 
 const Login = () => {
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const location = useLocation()
   const { codigo } = useSelector((estado) => estado.codigo)
   const { error } = useSelector((estado) => estado.error)
   const [values, handleInputChange, setValues] = useForm({ email: '', password: '' })
@@ -18,7 +20,8 @@ const Login = () => {
     if (!cargando) return
 
     if (codigo === 200) {
-      navigate('/')
+      const destination = safeInternalRedirect(new URLSearchParams(location.search).get('redirect'))
+      navigate(destination, { replace: true })
     } else if (codigo === 404) {
       setMensaje('El email o la contraseña no son válidos.')
       setValues((actual) => ({ ...actual, password: '' }))
@@ -27,7 +30,7 @@ const Login = () => {
       setMensaje('No pudimos iniciar sesión. Revisá tus datos e intentá nuevamente.')
       setCargando(false)
     }
-  }, [codigo, error, cargando, navigate, setValues])
+  }, [codigo, error, cargando, location.search, navigate, setValues])
 
   const handleSubmit = (evento) => {
     evento.preventDefault()

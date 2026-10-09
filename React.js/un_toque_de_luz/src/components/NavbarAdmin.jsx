@@ -1,9 +1,11 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import AdminNotifications from './AdminNotifications'
 
 const NavbarAdmin = () => {
   return (
     <>
+    <AdminNotifications />
     <li className="nav-item">
       <Link className="nav-link" to="/adminTurnos">Turnos</Link>
     </li>

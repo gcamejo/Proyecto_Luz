@@ -293,6 +293,72 @@
   background: #fbefeb;
 }
 
+.yoguini-message-success {
+  padding: 11px 13px;
+  border-left: 3px solid var(--yoguini-leaf);
+  color: #284736;
+  background: #edf5ee;
+}
+
+.yoguini-profile-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.yoguini-profile-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.yoguini-profile-role-badge.badge-admin {
+  color: #6d3326;
+  background: #faece7;
+  border: 1px solid #eccbc2;
+}
+
+.yoguini-profile-role-badge.badge-user {
+  color: var(--yoguini-forest);
+  background: var(--yoguini-wash);
+  border: 1px solid var(--yoguini-line);
+}
+
+.yoguini-password-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--yoguini-line);
+}
+
+.yoguini-password-toggle {
+  background: transparent;
+  border: 0;
+  color: var(--yoguini-leaf);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.yoguini-password-toggle:hover,
+.yoguini-password-toggle:focus-visible {
+  color: var(--yoguini-forest);
+}
+
+.yoguini-password-fields {
+  margin-top: 16px;
+}
+
 .yoguini-form-page {
   display: grid;
   min-height: 420px;

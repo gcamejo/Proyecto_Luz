@@ -39,6 +39,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/notifications')->gro
 
 //Rutas protegidas
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/profile', [YoguiniController::class, 'profile']);
+    Route::patch('/profile', [YoguiniController::class, 'updateProfile']);
+    Route::get('/perfil', [YoguiniController::class, 'profile']);
+    Route::patch('/perfil', [YoguiniController::class, 'updateProfile']);
     
     //Rutas a tabla yoguinis
     

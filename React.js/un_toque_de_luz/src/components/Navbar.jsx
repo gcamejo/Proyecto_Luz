@@ -32,7 +32,7 @@ useEffect(()=>{
     setClaseButton('site-nav-session site-nav-session-login')    
     setMensajeButton('Iniciar Sesion')
   }else{
-    setNavegar("/")
+    setNavegar("/perfil")
     setMensaje('Hola ' + usuarioLogueado.nombre )
     setClaseButton('site-nav-session site-nav-session-logout')    
     setMensajeButton('Cerrar Sesion')
@@ -79,7 +79,13 @@ return (
             </ul>
             <ul className="navbar-nav site-nav-account">
                   <li className="nav-item">
-                    <Link className="nav-link site-nav-greeting" to={navegar}>{mensaje}</Link>
+                    <Link
+                      className="nav-link site-nav-greeting"
+                      to={navegar}
+                      title={usuarioLogueado ? "Ver y editar mi perfil" : "Registrarse"}
+                    >
+                      {mensaje}
+                    </Link>
                   </li>
                   <li className="nav-item">
                      <button type="button" className={claseButton} onClick={handleSubmit}>{mensajeButton}</button>

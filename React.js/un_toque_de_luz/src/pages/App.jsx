@@ -33,6 +33,7 @@ import BookingAdmin from "./BookingAdmin"
 import MyBookings from "./MyBookings"
 import TurnosClases from "./TurnosClases"
 import YogaProgram from "./YogaProgram"
+import Perfil from "./Perfil"
 
 
 
@@ -66,6 +67,8 @@ return (
                   <Route path="/cargarFicha/" element={<FichaCreate/>}/>
                   {token ?
                           <>
+                          <Route path="/perfil" element={<Perfil/>}/>
+                          <Route path="/miPerfil" element={<Perfil/>}/>
                           <Route path="/verTurnos" element={<VerTurnos/>}/>
                           <Route path="/verTurnosPorDias" element={<VerTurnosPorDias/>}/>
                           <Route path="/cargarTurno" element={<TurnoCreate/>}/>

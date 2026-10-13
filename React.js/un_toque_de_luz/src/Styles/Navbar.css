@@ -114,6 +114,14 @@
     padding-right: 8px;
     padding-left: 8px;
     color: #52745d;
+    transition: color .18s ease, text-decoration .18s ease;
+}
+
+.site-navbar .site-nav-account .site-nav-greeting:hover,
+.site-navbar .site-nav-account .site-nav-greeting:focus-visible {
+    color: #263d30;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 .site-navbar .site-nav-session {

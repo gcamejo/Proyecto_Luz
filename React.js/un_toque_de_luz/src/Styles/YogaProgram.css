@@ -16,7 +16,7 @@
   align-items: center;
   padding: 64px max(8vw, 28px);
   color: #fffdf5;
-  background: linear-gradient(90deg, rgba(21, 43, 34, .86), rgba(21, 43, 34, .38)), url('/img/fondo_1.jpg') center 44% / cover;
+  background: linear-gradient(90deg, rgba(21, 43, 34, .86), rgba(21, 43, 34, .38)), url('/img/ActiYoga.jpg') center 44% / cover;
 }
 
 .yoga-program-hero-content { max-width: 680px; }

@@ -19,4 +19,5 @@ test('the /yoga alias points its canonical URL to /comenzar-yoga', () => {
 test('private and unknown routes are not indexed', () => {
   assert.equal(resolveSeo('/adminReservas', origin).robots, 'noindex, nofollow')
   assert.equal(resolveSeo('/login', origin).robots, 'noindex, nofollow')
+  assert.equal(resolveSeo('/perfil', origin).robots, 'noindex, nofollow')
 })

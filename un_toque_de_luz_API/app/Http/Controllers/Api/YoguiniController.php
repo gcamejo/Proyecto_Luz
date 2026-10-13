@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Yoguini;
+use App\Services\PasswordChangeNotifier;
 use App\Services\RegistrationNotifier;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -168,5 +169,45 @@ class YoguiniController extends Controller
     return response($respon);
         
 
+    }
+
+    public function profile(Request $request)
+    {
+        return response()->json($request->user()->makeHidden(['password']));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        $passwordChanged = $request->filled('password');
+        $notificationEmail = $user->email;
+        $notificationName = trim($user->nombre.' '.$user->apellido);
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
+            'direccion' => 'required|string|max:255',
+            'numero' => 'required|integer|min:0',
+            'telefono' => 'required|string|max:255',
+            'fechaNacimiento' => 'required|date',
+            'email' => ['required', 'email', 'max:255', Rule::unique('yoguinis', 'email')->ignore($user->id)],
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+        unset($validated['password']);
+
+        $user->fill($validated);
+        $user->save();
+
+        if ($passwordChanged) {
+            $changedAt = now(config('app.timezone'))->toIso8601String();
+            app()->terminating(function () use ($notificationEmail, $notificationName, $changedAt) {
+                app(PasswordChangeNotifier::class)->send($notificationEmail, $notificationName, $changedAt);
+            });
+        }
+
+        return response()->json($user->makeHidden(['password']));
     }
 }

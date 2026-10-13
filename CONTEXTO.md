@@ -352,3 +352,11 @@ El certificado, la redirección, el cron de renovación, DNS, firewall, proxies 
 - Las actividades fuera del sistema de ciclos y la página `/comenzar-yoga` ofrecen un contacto secundario por WhatsApp si `VITE_WHATSAPP_NUMBER` está configurada con dígitos solamente. Estas solicitudes se abren fuera de la app y no quedan registradas en el sistema.
 - La migración `2026_10_09_120000_create_notifications_table.php` quedó aplicada en la base local `un_toque_de_luz`; no se hicieron cambios de servidor de producción.
 - Verificación de esta entrega: `php artisan test` -> 45 aprobados, 1 omitido de concurrencia; `npm test` -> 2 aprobados; `npm run build` -> correcto.
+
+## Correo transaccional con Resend
+
+- Laravel 8 usa Resend por SMTP, sin un SDK adicional: `MAIL_HOST=smtp.resend.com`, puerto `587`, `MAIL_ENCRYPTION=tls` y usuario `resend`. La API key de Resend va como `MAIL_PASSWORD`; nunca se sube al repositorio. El emisor `MAIL_FROM_ADDRESS` tiene que pertenecer a un dominio verificado en Resend.
+- El `.env` local ya tenía el transporte Resend y una contraseña cargada; no se reemplazó ni se mostró esa clave. `.env.example` documenta los valores SMTP y deja vacíos la clave y `ADMIN_NOTIFICATION_EMAIL`.
+- Al registrar un alumno, se conserva la notificación de base de datos para los admins. El correo al administrador solo se envía si `ADMIN_NOTIFICATION_EMAIL` tiene destinatario; el `.env` local lo mantiene vacío, por lo que esa parte queda desactivada hasta configurar una dirección.
+- Al cambiar contraseña desde `/perfil`, se envía un aviso de texto plano al correo que tenía la cuenta antes del cambio, después de guardar. El correo no incluye la contraseña; un fallo del SMTP se registra sin contenido sensible y no deshace el cambio.
+- Verificación final: `php artisan test` -> 56 aprobados, 1 omitido (concurrencia MySQL opt-in), 0 fallidos. `UserProfileTest` pasó sus 10 casos.

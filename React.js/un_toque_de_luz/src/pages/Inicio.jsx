@@ -31,7 +31,7 @@ const Inicio = () => {
 
         <div className="inicio-actividades">
           <article className="inicio-actividad">
-            <img src="/img/Constelaciones4.jpg" alt="Yoga" />
+            <img src="/img/ActiYoga.jpg" alt="Yoga" />
             <div>
               <h3>Yoga</h3>
               <p>Encuentra el equilibrio perfecto entre cuerpo, mente y espíritu.</p>

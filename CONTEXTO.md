@@ -355,8 +355,33 @@ El certificado, la redirección, el cron de renovación, DNS, firewall, proxies 
 
 ## Correo transaccional con Resend
 
-- Laravel 8 usa Resend por SMTP, sin un SDK adicional: `MAIL_HOST=smtp.resend.com`, puerto `587`, `MAIL_ENCRYPTION=tls` y usuario `resend`. La API key de Resend va como `MAIL_PASSWORD`; nunca se sube al repositorio. El emisor `MAIL_FROM_ADDRESS` tiene que pertenecer a un dominio verificado en Resend.
-- El `.env` local ya tenía el transporte Resend y una contraseña cargada; no se reemplazó ni se mostró esa clave. `.env.example` documenta los valores SMTP y deja vacíos la clave y `ADMIN_NOTIFICATION_EMAIL`.
-- Al registrar un alumno, se conserva la notificación de base de datos para los admins. El correo al administrador solo se envía si `ADMIN_NOTIFICATION_EMAIL` tiene destinatario; el `.env` local lo mantiene vacío, por lo que esa parte queda desactivada hasta configurar una dirección.
-- Al cambiar contraseña desde `/perfil`, se envía un aviso de texto plano al correo que tenía la cuenta antes del cambio, después de guardar. El correo no incluye la contraseña; un fallo del SMTP se registra sin contenido sensible y no deshace el cambio.
-- Verificación final: `php artisan test` -> 56 aprobados, 1 omitido (concurrencia MySQL opt-in), 0 fallidos. `UserProfileTest` pasó sus 10 casos.
+- Método: llamada HTTP directa `POST https://api.resend.com/emails` con Bearer API key; no usa `resend/resend-laravel`, `MAIL_MAILER=resend` ni SwiftMailer para estos avisos. Se usa el cliente HTTP de Laravel 8/Guzzle 7.8.1, incluido en el proyecto. Constraint de PHP del proyecto: `^7.3|^8.0`; PHP local verificado: 7.4.21.
+- Variables nuevas: `RESEND_API_KEY` (clave restringida a envío), `RESEND_FROM_EMAIL` (remitente de dominio verificado) y `ADMIN_NOTIFICATION_EMAIL` (destinatario opcional de altas). La clave no se incluye en el repo; completar en el `.env` privado del servidor. `ADMIN_NOTIFICATION_EMAIL` vacío desactiva solo el mail de altas, no la notificación interna.
+- En la última inspección, el `.env` local todavía tenía la configuración SMTP anterior y no tenía `RESEND_API_KEY` ni `RESEND_FROM_EMAIL`; el nuevo cliente HTTP no lee `MAIL_PASSWORD`. Ingresar una clave nueva/rotada y el remitente verificado antes de probar un envío real.
+- Cada POST tiene timeout de 5 segundos y hasta dos intentos (un reintento) únicamente ante fallas de conexión. Resend recibe `Idempotency-Key` para evitar duplicados durante 24 h. La API responde después del guardado; el envío se ejecuta al terminar la respuesta y sus errores no revierten el alta ni el cambio de contraseña.
+- Los logs guardan propósito, estado/tipo de error y clase de excepción; nunca API key, direcciones, cuerpo del correo ni respuesta completa de Resend.
+- Registro nuevo: se conserva la notificación de base de datos para los admins. El aviso de cambio de contraseña va al correo anterior, sin incluir la contraseña.
+
+### Configurar y verificar Resend
+
+1. En Resend, crear una API key de producción con permiso solo para enviar emails. Si se expuso una clave anterior, revocarla y usar una nueva.
+2. Agregar `untoquedeluz.com.ar` en Domains de Resend. Copiar desde el panel los registros DNS que aparecen para ese dominio, normalmente DKIM y SPF (TXT/CNAME según lo indique Resend), en el DNS autoritativo. No inventar los valores: son únicos de la cuenta.
+3. Esperar el estado Verified en Resend. Configurar `RESEND_FROM_EMAIL` con una dirección de ese dominio verificado, por ejemplo `notificaciones@untoquedeluz.com.ar` si está permitido por la configuración.
+4. Cargar `RESEND_API_KEY`, `RESEND_FROM_EMAIL` y `ADMIN_NOTIFICATION_EMAIL` en el `.env` privado del servidor. El ejemplo deja `RESEND_API_KEY` y `ADMIN_NOTIFICATION_EMAIL` vacíos y usa un dominio placeholder para el remitente.
+5. Después de configurar, ejecutar `php artisan config:clear` si se puede usar Artisan y realizar una prueba controlada con un usuario nuevo. Para actualizar el vendor sin consola en el hosting, generar en local con PHP compatible: `composer install --no-dev --optimize-autoloader`.
+
+### Checklist de producción
+
+- [ ] Revocar cualquier clave Resend expuesta y crear una clave restringida a envío.
+- [ ] Verificar el dominio en Resend mediante los registros DNS publicados en su panel; comprobar estado Verified.
+- [ ] Usar `RESEND_FROM_EMAIL` del dominio verificado y establecer `ADMIN_NOTIFICATION_EMAIL`.
+- [ ] Confirmar PHP compatible con el constraint `^7.3|^8.0`; se recomienda desplegar con una versión probada (PHP 7.4.21 local o PHP 8.x validado).
+- [ ] Generar `vendor` para producción con `composer install --no-dev --optimize-autoloader` usando la versión de PHP del hosting; incluir `vendor` al subir si el plan no ofrece Composer/SSH.
+- [ ] Confirmar `APP_ENV=production`, `APP_DEBUG=false`, permisos de `storage`/`bootstrap/cache`, configuración segura y no subir `.env` al repositorio.
+- [ ] Probar email de alta y cambio de contraseña, verificar entrega en Resend Activity y confirmar que un error HTTP no afecte el registro/cambio.
+
+### Verificación local de Resend HTTP
+
+- `php artisan test` -> 61 aprobados, 1 omitido (concurrencia MySQL opt-in), 0 fallidos después del cambio a HTTP.
+- `ResendApiMailerTest`, `RegistrationNotificationsTest` y `UserProfileTest` se ejecutan con `Http::fake`; el envío real no se prueba desde la suite.
+- Ningún email real se envió durante las pruebas automatizadas; verificar una vez rotada la clave, validado el dominio y cargadas las variables de Resend.

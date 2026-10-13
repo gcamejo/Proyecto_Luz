@@ -203,8 +203,14 @@ class YoguiniController extends Controller
 
         if ($passwordChanged) {
             $changedAt = now(config('app.timezone'))->toIso8601String();
-            app()->terminating(function () use ($notificationEmail, $notificationName, $changedAt) {
-                app(PasswordChangeNotifier::class)->send($notificationEmail, $notificationName, $changedAt);
+            $idempotencyKey = 'password-change-'.$user->getKey().'-'.hash('sha256', $changedAt);
+            app()->terminating(function () use ($notificationEmail, $notificationName, $changedAt, $idempotencyKey) {
+                app(PasswordChangeNotifier::class)->send(
+                    $notificationEmail,
+                    $notificationName,
+                    $changedAt,
+                    $idempotencyKey
+                );
             });
         }
 

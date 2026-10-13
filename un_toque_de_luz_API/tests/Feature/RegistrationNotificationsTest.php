@@ -5,7 +5,8 @@ namespace Tests\Feature;
 use App\Models\Yoguini;
 use App\Notifications\RegistrationCreatedNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 use RuntimeException;
 use Tests\TestCase;
@@ -20,7 +21,7 @@ class RegistrationNotificationsTest extends TestCase
         $secondAdmin = Yoguini::factory()->create(['perfil' => 'Admin']);
         $existingStudent = Yoguini::factory()->create(['perfil' => 'user']);
         Notification::fake();
-        Mail::fake();
+        Http::fake();
         config(['mail.admin_notification_email' => '']);
 
         $response = $this->postJson('/api/yoguinis', $this->registrationPayload())->assertCreated();
@@ -29,7 +30,7 @@ class RegistrationNotificationsTest extends TestCase
         Notification::assertSentTo($firstAdmin, RegistrationCreatedNotification::class);
         Notification::assertSentTo($secondAdmin, RegistrationCreatedNotification::class);
         Notification::assertNotSentTo($existingStudent, RegistrationCreatedNotification::class);
-        Mail::assertNothingOutgoing();
+        Http::assertNothingSent();
     }
 
     public function test_notification_failure_does_not_fail_registration()
@@ -49,7 +50,11 @@ class RegistrationNotificationsTest extends TestCase
         Yoguini::factory()->create(['perfil' => 'Admin']);
         Notification::fake();
         config(['mail.admin_notification_email' => 'admin@example.test']);
-        Mail::shouldReceive('raw')->once()->andThrow(new RuntimeException('sensitive transport detail'));
+        config(['services.resend.api_key' => 'test-resend-key']);
+        config(['services.resend.from' => 'alerts@example.test']);
+        Http::fake([
+            'https://api.resend.com/emails' => Http::response(['name' => 'validation_error'], 422),
+        ]);
 
         $this->postJson('/api/yoguinis', $this->registrationPayload())
             ->assertCreated();
@@ -62,13 +67,39 @@ class RegistrationNotificationsTest extends TestCase
         Yoguini::factory()->create(['perfil' => 'Admin']);
         $student = Yoguini::factory()->create(['perfil' => 'user']);
         config(['mail.admin_notification_email' => 'admin@example.test']);
-        Mail::shouldReceive('raw')->once();
+        config(['services.resend.api_key' => 'test-resend-key']);
+        config(['services.resend.from' => 'alerts@example.test']);
+        Http::fake([
+            'https://api.resend.com/emails' => Http::response(['id' => 'email_test_45'], 200),
+        ]);
         $notifier = app(\App\Services\RegistrationNotifier::class);
 
         $notifier->notifyAdmins($student, '2026-10-09T12:00:00+00:00');
         $notifier->notifyAdmins($student, '2026-10-09T12:00:00+00:00');
 
         $this->assertDatabaseCount('notifications', 1);
+        Http::assertSentCount(1);
+    }
+
+    public function test_registration_sends_admin_email_through_resend_http_api()
+    {
+        Yoguini::factory()->create(['perfil' => 'Admin']);
+        Notification::fake();
+        config(['mail.admin_notification_email' => 'admin@example.test']);
+        config(['services.resend.api_key' => 'test-resend-key']);
+        config(['services.resend.from' => 'alerts@example.test']);
+        Http::fake([
+            'https://api.resend.com/emails' => Http::response(['id' => 'email_test_46'], 200),
+        ]);
+
+        $this->postJson('/api/yoguinis', $this->registrationPayload())->assertCreated();
+
+        Http::assertSent(function (Request $request) {
+            return $request->url() === 'https://api.resend.com/emails'
+                && $request->data()['to'] === ['admin@example.test']
+                && $request->data()['subject'] === 'Nuevo registro de alumno'
+                && strpos($request->data()['text'], 'new-student@example.test') !== false;
+        });
     }
 
     public function test_admin_notification_endpoints_require_admin_and_can_mark_items_read()

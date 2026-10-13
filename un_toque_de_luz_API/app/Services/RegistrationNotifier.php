@@ -6,7 +6,6 @@ use App\Models\Yoguini;
 use App\Notifications\RegistrationCreatedNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Throwable;
 
@@ -68,15 +67,12 @@ class RegistrationNotifier
         }
 
         $body = "Nombre: {$name}\nEmail: {$student->email}\nFecha: {$registeredAt}";
-
-        try {
-            Mail::raw($body, function ($message) use ($recipient) {
-                $message->to($recipient)->subject('Nuevo registro de alumno');
-            });
-        } catch (Throwable $exception) {
-            Log::warning('Admin registration email failed.', [
-                'exception_type' => get_class($exception),
-            ]);
-        }
+        app(ResendApiMailer::class)->send(
+            $recipient,
+            'Nuevo registro de alumno',
+            $body,
+            'registration-'.$student->getKey(),
+            'registration'
+        );
     }
 }

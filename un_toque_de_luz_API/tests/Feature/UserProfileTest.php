@@ -2,13 +2,11 @@
 
 namespace Tests\Feature;
 
-use App\Mail\PasswordChangedMail;
 use App\Models\Yoguini;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use Mockery;
-use RuntimeException;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class UserProfileTest extends TestCase
@@ -114,7 +112,7 @@ class UserProfileTest extends TestCase
 
     public function test_password_change_notice_goes_to_the_previous_email_address()
     {
-        Mail::fake();
+        $this->configureResendFake();
         $user = Yoguini::factory()->create(['email' => 'previous@example.test']);
 
         $this->actingAs($user, 'sanctum')
@@ -131,24 +129,41 @@ class UserProfileTest extends TestCase
             ])
             ->assertOk();
 
-        Mail::assertSent(PasswordChangedMail::class, function ($mail) {
-            return collect($mail->to)->contains(function ($recipient) {
-                return ($recipient['address'] ?? null) === 'previous@example.test';
-            });
+        Http::assertSent(function (Request $request) {
+            return $request->data()['to'] === ['previous@example.test']
+                && $request->data()['subject'] === 'Aviso de cambio de contraseña'
+                && strpos($request->data()['text'], 'new-secure-password') === false;
         });
     }
 
     public function test_password_changed_email_contains_no_password_secret()
     {
-        $mail = new PasswordChangedMail('Lucia Perez', '2026-10-13T12:00:00-03:00');
+        $this->configureResendFake();
+        $user = Yoguini::factory()->create();
 
-        $mail->assertSeeInText('Se cambió la contraseña');
-        $mail->assertDontSeeInText('new-secure-password');
+        $this->actingAs($user, 'sanctum')
+            ->patchJson('/api/profile', [
+                'nombre' => $user->nombre,
+                'apellido' => $user->apellido,
+                'direccion' => $user->direccion,
+                'numero' => $user->numero,
+                'telefono' => $user->telefono,
+                'fechaNacimiento' => $user->fechaNacimiento,
+                'email' => $user->email,
+                'password' => 'new-secure-password',
+                'password_confirmation' => 'new-secure-password',
+            ])
+            ->assertOk();
+
+        Http::assertSent(function (Request $request) {
+            return strpos($request->data()['text'], 'Se cambió la contraseña') !== false
+                && strpos($request->data()['text'], 'new-secure-password') === false;
+        });
     }
 
     public function test_profile_update_without_password_does_not_send_password_notice()
     {
-        Mail::fake();
+        $this->configureResendFake();
         $user = Yoguini::factory()->create();
 
         $this->actingAs($user, 'sanctum')
@@ -163,18 +178,13 @@ class UserProfileTest extends TestCase
             ])
             ->assertOk();
 
-        Mail::assertNothingSent();
+        Http::assertNothingSent();
     }
 
     public function test_mail_failure_does_not_fail_password_change()
     {
         $user = Yoguini::factory()->create(['email' => 'profile@example.test']);
-        $pendingMail = Mockery::mock(\Illuminate\Mail\PendingMail::class);
-        $pendingMail->shouldReceive('send')
-            ->once()
-            ->with(Mockery::type(PasswordChangedMail::class))
-            ->andThrow(new RuntimeException('SMTP transport failed'));
-        Mail::shouldReceive('to')->once()->with('profile@example.test')->andReturn($pendingMail);
+        $this->configureResendFake(Http::response(['name' => 'internal_error'], 500));
 
         $this->actingAs($user, 'sanctum')
             ->patchJson('/api/profile', [
@@ -191,6 +201,17 @@ class UserProfileTest extends TestCase
             ->assertOk();
 
         $this->assertTrue(Hash::check('new-secure-password', $user->fresh()->password));
+    }
+
+    private function configureResendFake($response = null)
+    {
+        config([
+            'services.resend.api_key' => 'test-resend-key',
+            'services.resend.from' => 'alerts@example.test',
+        ]);
+        Http::fake([
+            'https://api.resend.com/emails' => $response ?: Http::response(['id' => 'email_test_profile'], 200),
+        ]);
     }
 
     public function test_user_cannot_take_another_users_email()

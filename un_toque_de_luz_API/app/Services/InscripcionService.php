@@ -122,6 +122,7 @@ class InscripcionService
                     'estado' => 'reservada',
                 ]);
             }
+            app(CargoService::class)->createForEnrollment($enrollment, $ciclo);
 
             return $enrollment->load(['ciclo', 'horarios', 'reservas.clase']);
         });

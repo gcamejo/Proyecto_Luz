@@ -10,6 +10,9 @@ const NavbarUser = () => {
     <li className="nav-item">
         <NavLink className={({isActive}) => `nav-link${isActive ? ' active' : ''}`} to="/misReservas">Mis reservas</NavLink>
     </li>
+    <li className="nav-item">
+        <NavLink className={({isActive}) => `nav-link${isActive ? ' active' : ''}`} to="/misPagos">Mis pagos</NavLink>
+    </li>
     </>
     )
 }

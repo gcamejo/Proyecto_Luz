@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { BsBell } from 'react-icons/bs'
+import { useDispatch } from 'react-redux'
 import useSWR from 'swr'
 import axios from '../api/axios'
 import fetcher from '../api/fetcher'
+import { getFichasYoguinis } from '../store/Slice/Yoguinis/yoguinis'
 import '../Styles/AdminNotifications.css'
 
 const formatDate = value => new Intl.DateTimeFormat('es-AR', {
@@ -11,16 +13,29 @@ const formatDate = value => new Intl.DateTimeFormat('es-AR', {
 }).format(new Date(value))
 
 const AdminNotifications = () => {
+  const dispatch = useDispatch()
   const rootRef = useRef(null)
+  const latestNotificationRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [marking, setMarking] = useState(null)
+  const [deleting, setDeleting] = useState(null)
   const [actionError, setActionError] = useState('')
   const { data, error, isLoading, mutate } = useSWR('api/admin/notifications', fetcher, {
-    refreshInterval: 60000,
+    refreshInterval: 15000,
     revalidateOnFocus: true,
   })
   const unreadCount = data?.unread_count || 0
   const notifications = data?.notifications || []
+  const latestNotificationId = notifications[0]?.id
+
+  useEffect(() => {
+    if (!latestNotificationId) return
+
+    if (latestNotificationRef.current && latestNotificationRef.current !== latestNotificationId) {
+      dispatch(getFichasYoguinis()).catch(() => {})
+    }
+    latestNotificationRef.current = latestNotificationId
+  }, [dispatch, latestNotificationId])
 
   useEffect(() => {
     if (!open) return undefined
@@ -63,6 +78,19 @@ const AdminNotifications = () => {
     }
   }
 
+  const deleteReadNotification = async notificationId => {
+    setDeleting(notificationId)
+    setActionError('')
+    try {
+      await axios.delete(`api/admin/notifications/${notificationId}`)
+      await mutate()
+    } catch (requestError) {
+      setActionError(requestError.response?.data?.message || 'No se pudo eliminar la notificación.')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   return (
     <li className="nav-item admin-notifications" ref={rootRef}>
       <button
@@ -97,6 +125,9 @@ const AdminNotifications = () => {
               </div>
               {!notification.read_at && <button type="button" onClick={() => markAsRead(notification.id)} disabled={marking === notification.id}>
                 {marking === notification.id ? 'Guardando…' : 'Marcar como leída'}
+              </button>}
+              {notification.read_at && <button type="button" onClick={() => deleteReadNotification(notification.id)} disabled={deleting === notification.id}>
+                {deleting === notification.id ? 'Eliminando…' : 'Eliminar'}
               </button>}
             </li>
           ))}

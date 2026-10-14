@@ -23,10 +23,11 @@ const NavbarAdmin = () => {
            Administrar
           </button>
          <ul className="dropdown-menu">
-           <li><Link className="dropdown-item" to="/adminServicios">Servicios</Link></li>
-           <li><Link className="dropdown-item" to="/adminHorarios">Horarios</Link></li>
+           {/*<li><Link className="dropdown-item" to="/adminServicios">Servicios</Link></li>
+           <li><Link className="dropdown-item" to="/adminHorarios">Horarios</Link></li>*/}
            <li><Link className="dropdown-item" to="/adminActividades">Actividades</Link></li>
            <li><Link className="dropdown-item" to="/adminReservas">Administrar clases</Link></li>
+           <li><Link className="dropdown-item" to="/adminPagos">Pagos</Link></li>
          </ul>
     </li>          
     </>

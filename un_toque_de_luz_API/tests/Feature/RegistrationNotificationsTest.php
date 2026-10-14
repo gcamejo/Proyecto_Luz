@@ -106,11 +106,13 @@ class RegistrationNotificationsTest extends TestCase
     {
         $this->getJson('/api/admin/notifications')->assertUnauthorized();
         $this->postJson('/api/admin/notifications/00000000-0000-0000-0000-000000000000/read')->assertUnauthorized();
+        $this->deleteJson('/api/admin/notifications/00000000-0000-0000-0000-000000000000')->assertUnauthorized();
 
         $student = Yoguini::factory()->create(['perfil' => 'user']);
         $this->actingAs($student, 'sanctum');
         $this->getJson('/api/admin/notifications')->assertForbidden();
         $this->postJson('/api/admin/notifications/00000000-0000-0000-0000-000000000000/read')->assertForbidden();
+        $this->deleteJson('/api/admin/notifications/00000000-0000-0000-0000-000000000000')->assertForbidden();
 
         $admin = Yoguini::factory()->create(['perfil' => 'Admin']);
         $admin->notify(new RegistrationCreatedNotification(

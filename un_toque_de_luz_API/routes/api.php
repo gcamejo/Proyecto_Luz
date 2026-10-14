@@ -4,6 +4,8 @@ use App\Http\Controllers\Api\ActividadController;
 use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\BookingAdminController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\PaymentAdminController;
+use App\Http\Controllers\Api\PaymentStudentController;
 use App\Http\Controllers\Api\PublicYogaCyclesController;
 use App\Http\Controllers\Api\YoguiniController;
 use Illuminate\Http\Request;
@@ -33,6 +35,7 @@ Route::get('/actividades',[ActividadController::class,'index']);
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/notifications')->group(function () {
     Route::get('/', [AdminNotificationController::class, 'index']);
     Route::post('/{notificationId}/read', [AdminNotificationController::class, 'markRead']);
+    Route::delete('/{notificationId}', [AdminNotificationController::class, 'destroy']);
 });
 
 
@@ -65,6 +68,24 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 
+});
+
+Route::middleware('auth:sanctum')->prefix('payments')->group(function () {
+    Route::get('/me', [PaymentStudentController::class, 'show']);
+
+    Route::prefix('admin')->middleware('can:manage,App\\Models\\Cargo')->group(function () {
+        Route::get('/charges', [PaymentAdminController::class, 'charges']);
+        Route::post('/charges', [PaymentAdminController::class, 'storeCharge']);
+        Route::patch('/charges/{cargo}/discount', [PaymentAdminController::class, 'discount']);
+        Route::patch('/charges/{cargo}/void', [PaymentAdminController::class, 'voidCharge']);
+        Route::post('/charges/{cargo}/apply-credit', [PaymentAdminController::class, 'applyCredit']);
+        Route::post('/cycles/{ciclo}/charges/generate', [PaymentAdminController::class, 'generateCharges']);
+        Route::get('/summary', [PaymentAdminController::class, 'summary']);
+        Route::get('/students/{yoguini}', [PaymentAdminController::class, 'student']);
+        Route::post('/payments', [PaymentAdminController::class, 'registerPayment']);
+        Route::patch('/payments/{pago}/void', [PaymentAdminController::class, 'voidPayment']);
+        Route::patch('/applications/{aplicacion}/void', [PaymentAdminController::class, 'voidApplication']);
+    });
 });
 
 Route::middleware('auth:sanctum')->prefix('booking')->group(function () {

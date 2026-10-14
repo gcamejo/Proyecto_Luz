@@ -92,7 +92,7 @@ const FichaCreate = () => {
           <button className="yoguini-button yoguini-button-primary" type="submit" disabled={saving}>
             {saving ? 'Guardando...' : 'Crear ficha'}
           </button>
-          <Link className="yoguini-button yoguini-button-secondary" to={isAdminCreate ? '/verFichas' : '/login'}>Cancelar</Link>
+          <Link className="yoguini-button yoguini-button-secondary" to={isAdminCreate ? '/verFichas' : '/'}>Cancelar</Link>
         </div>
       </form>
     </section>

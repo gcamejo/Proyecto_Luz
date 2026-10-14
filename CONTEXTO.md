@@ -4,7 +4,7 @@ Actualizado: 2026-10-08
 
 ## Estado actual
 
-El flujo nuevo de reservas por ciclo está implementado y convive con el dominio legacy de turnos. Las migraciones aditivas se aplicaron en la base local y se validó el tipo de las claves foráneas contra `yoguinis.id` (`INT(11)`). La última suite pasó 27 tests de Laravel; la prueba concurrente MySQL se omite por defecto y requiere habilitación explícita.
+El flujo nuevo de reservas por ciclo está implementado y convive con el dominio legacy de turnos. Las migraciones aditivas se aplicaron en la base local y se validó el tipo de las claves foráneas contra `yoguinis.id` (`INT(11)`). La última suite completa está en la sección “Total real de tests” al final de este documento; las pruebas concurrentes MySQL se omiten por defecto y requieren habilitación explícita.
 
 La implementación está organizada en:
 
@@ -223,7 +223,7 @@ Las operaciones principales están en servicios por responsabilidad (`CicloServi
 
 Verificación registrada el 2026-10-08:
 
-- `php artisan test` -> 36 tests pasando y 1 prueba MySQL de concurrencia omitida por defecto
+- `php artisan test` -> ver “Total real de tests” (suite completa; las pruebas MySQL de concurrencia se omiten por defecto)
 - Prueba concurrente explícita contra `un_toque_de_luz` -> pasó: 2 procesos lanzados, 1 reserva confirmada, 1 rechazo y exactamente 1 reserva para el último cupo
 - Limpieza concurrente -> conteos antes/después idénticos en `yoguinis` (4), `horarios` (5), `ciclos` (3), `ciclo_horarios` (5), `clases` (16), `inscripciones` (2), `inscripcion_horarios` (4), `reservas` (12) y `recuperaciones` (5); consulta posterior del marcador `CONC_TEST_` -> 0 filas
 - Backup previo de `un_toque_de_luz` con `mysqldump --single-transaction` -> `C:\Users\gcamejo\AppData\Local\Temp\Proyecto_Luz_DB_Backups\un_toque_de_luz-20261008-115920.sql` (53.233 bytes)
@@ -335,7 +335,7 @@ El certificado, la redirección, el cron de renovación, DNS, firewall, proxies 
 - El build de React se ejecutó con `VITE_API_URL=https://api.TU-DOMINIO/`; el bundle contiene el host HTTPS de ejemplo y ninguna referencia a `http://localhost:8000` para recursos propios.
 - `VITE_API_URL` es obligatoria al ejecutar el front en producción; el destino local automático queda limitado al modo de desarrollo.
 - `php artisan config:clear` -> correcto.
-- `php artisan test` -> 37 aprobados, 1 omitido y 0 fallidos. El omitido es la prueba de concurrencia, que requiere `RUN_BOOKING_CONCURRENCY_TESTS=1`.
+- `php artisan test` -> ver “Total real de tests”. Los omitidos son las pruebas de concurrencia, que requieren `RUN_BOOKING_CONCURRENCY_TESTS=1`.
 - La prueba enfocada del middleware confirmó HSTS `max-age=300`, `X-Content-Type-Options: nosniff` y `X-Frame-Options: DENY` en producción.
 
 ### Verificación local actual
@@ -348,10 +348,11 @@ El certificado, la redirección, el cron de renovación, DNS, firewall, proxies 
 - La portada incluye el CTA destacado “Quiero comenzar yoga” y `/yoga` muestra información editable desde `React.js/un_toque_de_luz/src/content/yogaPageContent.js` junto con los ciclos públicos.
 - `GET /api/public/yoga/cycles` no requiere autenticación, tiene límite propio y solo expone ciclos activos no vencidos con clases futuras programadas, día/hora y disponibilidad; no serializa inscripciones ni datos personales.
 - El registro está limitado a cinco solicitudes por minuto. Al terminar la respuesta, se crean notificaciones de base de datos para cada admin y se envía email solo si `ADMIN_NOTIFICATION_EMAIL` está configurado. Los errores se registran sin incluir valores sensibles, y los reintentos del mismo ID no duplican ambos canales.
-- El panel admin consulta el contador/listado y permite marcar registros como leídos. Ambas rutas requieren Sanctum y el middleware `admin`.
+- El panel admin consulta el contador/listado, permite marcar avisos como leídos y borrar solo los ya leídos; las rutas requieren Sanctum y middleware `admin`. Al detectar un registro nuevo, refresca el directorio Redux de yoguinis.
+- El token y usuario autenticados se conservan en `sessionStorage` para mantener la sesión al recargar la misma pestaña y se eliminan al cerrar sesión.
 - Las actividades fuera del sistema de ciclos y la página `/comenzar-yoga` ofrecen un contacto secundario por WhatsApp si `VITE_WHATSAPP_NUMBER` está configurada con dígitos solamente. Estas solicitudes se abren fuera de la app y no quedan registradas en el sistema.
 - La migración `2026_10_09_120000_create_notifications_table.php` quedó aplicada en la base local `un_toque_de_luz`; no se hicieron cambios de servidor de producción.
-- Verificación de esta entrega: `php artisan test` -> 45 aprobados, 1 omitido de concurrencia; `npm test` -> 2 aprobados; `npm run build` -> correcto.
+- Verificación de esta entrega: ver “Total real de tests”; `npm run build` -> correcto.
 
 ## Correo transaccional con Resend
 
@@ -382,6 +383,52 @@ El certificado, la redirección, el cron de renovación, DNS, firewall, proxies 
 
 ### Verificación local de Resend HTTP
 
-- `php artisan test` -> 61 aprobados, 1 omitido (concurrencia MySQL opt-in), 0 fallidos después del cambio a HTTP.
+- `php artisan test` -> ver “Total real de tests”; incluye el borrado de avisos leídos.
 - `ResendApiMailerTest`, `RegistrationNotificationsTest` y `UserProfileTest` se ejecutan con `Http::fake`; el envío real no se prueba desde la suite.
 - Ningún email real se envió durante las pruebas automatizadas; verificar una vez rotada la clave, validado el dominio y cargadas las variables de Resend.
+- Frontend: `npm test` -> ver “Total real de tests”; `npm run build` -> correcto después de agregar persistencia de sesión y refresco del directorio admin.
+
+## Módulo de registro de pagos (manual)
+
+Registro manual de pagos de alumnos por mes, con pagos parciales, saldos y saldo a favor, cargado por el admin. NO hay pasarelas de pago ni comprobantes fiscales.
+
+### Modelo
+
+- `cargos`: lo que debe el alumno (periodo mensual, `monto_original`, `descuento` con motivo, `monto_final`, `vence_el`, `estado` pendiente/parcial/pagado/anulado, vínculo opcional a ciclo/inscripción). Anulación lógica con motivo.
+- `pagos`: dinero recibido (monto, `fecha_pago`, método efectivo/transferencia/otro, referencia, nota, vigente/anulado, quién lo registró).
+- `pago_aplicaciones`: reparte un pago entre cargos (vigente/anulada con motivo). El saldo a favor de un alumno es SIEMPRE calculado: pagos vigentes menos aplicaciones vigentes. Saldos de cargo y de mes se calculan; no se guardan. El `estado` del cargo se recalcula en la misma transacción.
+- Migración aditiva `2026_10_14_100000_create_payment_ledger_tables.php` con `DECIMAL(12,2)`; sin borrados físicos ni cascadas. **Pendiente: aplicarla en MySQL con `php artisan migrate` (aún no ejecutada en la base local).**
+- Aritmética en centavos enteros (`App\Support\Money`); la API serializa importes como texto decimal (`"1500.00"`). Fechas en `America/Argentina/Buenos_Aires`; `fecha_pago` no puede ser futura. Frontend: formato es-AR `$ 12.500,00` (`src/utils/money.js`).
+
+### Reglas
+
+1. Al inscribirse a un ciclo con precio se crea el cargo del mes dentro de la misma transacción de inscripción (idempotente).
+2. “Generar cargos faltantes del ciclo” es idempotente: devuelve `{creados, omitidos, sin_precio}`.
+3. Cargos manuales; descuento con motivo obligatorio y sin dejar el cargo por debajo de lo aplicado.
+4. Registrar pago con `cargo_id` opcional y `aplicar_excedente`: el excedente va a otros cargos pendientes (más antiguos primero) o queda como saldo a favor. Sin `cargo_id`, todo queda como saldo a favor.
+5. El saldo a favor NO se aplica solo: el admin usa “Aplicar saldo a favor” y la pantalla muestra un aviso.
+6. Desaplicar y anular pago exigen motivo; anular pago muestra antes los cargos afectados (`cargos_afectados`). Anular cargo solo sin aplicaciones vigentes.
+7. Dar de baja una inscripción NO anula el cargo: solo se marca “Inscripción dada de baja, revisar cargo”.
+8. Concurrencia: cada operación corre en `DB::transaction`, bloquea primero la fila del alumno (`lockForUpdate` en `yoguinis`) y luego cargos/pagos/aplicaciones.
+9. **Devoluciones (refunds): NO implementadas, pendientes.**
+
+### Endpoints (Sanctum; admin bajo `can:manage,App\Models\Cargo`)
+
+- Admin, prefijo `api/payments/admin`: `GET /charges?periodo&estado&ciclo_id&user_id&q`, `GET /summary?periodo`, `GET /students/{id}`, `POST /charges`, `PATCH /charges/{id}/discount`, `PATCH /charges/{id}/void`, `POST /charges/{id}/apply-credit`, `POST /cycles/{ciclo}/charges/generate`, `POST /payments`, `PATCH /payments/{id}/void`, `PATCH /applications/{id}/void`.
+- Alumno: `GET /api/payments/me` (solo lectura, solo datos propios).
+
+### Archivos tocados
+
+- Backend nuevo: migración citada, `app/Support/Money.php`, modelos `Cargo`/`Pago`/`PagoAplicacion`, servicios `CargoService`/`PagoService`/`ResumenMensualService` + `Concerns/LocksStudent`, `Policies/PaymentAdminPolicy`, `Rules/MoneyAmount`, `Http/Requests/Payments/*`, `Http/Resources/Payments/*`, controladores `PaymentAdminController`/`PaymentStudentController`.
+- Backend modificado: `AuthServiceProvider`, `routes/api.php`, `InscripcionService` (crea el cargo al inscribir).
+- Frontend nuevo: `pages/AdminPagos.jsx`, `pages/MisPagos.jsx`, `components/payments/{ActionModal,shared}.jsx`, `Styles/Pagos.css`, `utils/money.js`. Modificado: `pages/App.jsx` (rutas `/adminPagos`, `/misPagos`), `NavbarAdmin.jsx` (Administrar > Pagos), `NavbarUser.jsx` (Mis pagos), `public/robots.txt`.
+
+### Tests agregados
+
+- `tests/Feature/PaymentLedgerTest.php` (22 tests): cargo por inscripción e idempotencia, pagos parciales, saldo a favor, excedente, aplicar/desaplicar, anulaciones, descuentos, centavos, resumen mensual, filtros, autorización y aislamiento del alumno.
+- `tests/Feature/PaymentConcurrencyTest.php` + `tests/Support/payment-credit-worker.php`: concurrencia MySQL opt-in (mismas guardas que la de cupos: `RUN_BOOKING_CONCURRENCY_TESTS=1`, `.env` local/mysql, `BOOKING_CONCURRENCY_DB_DATABASE`). Dos workers aplican el mismo saldo a favor: uno aplica y el otro es rechazado. **No se ejecutó contra MySQL** (omitida por defecto; requiere aplicar antes la migración).
+- Frontend: `tests/money.test.js` (3 tests).
+
+## Total real de tests
+
+Última corrida completa: Laravel `php artisan test` -> **88 tests** (86 aprobados, 2 omitidos de concurrencia MySQL opt-in, 0 fallidos); frontend `npm test` -> **15 tests** aprobados; `npm run build` -> correcto.

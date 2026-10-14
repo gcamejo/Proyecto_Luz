@@ -1,0 +1,42 @@
+.payment-toolbar { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 1rem; }
+.payment-toolbar label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; color: var(--booking-muted); }
+.payment-toolbar input, .payment-toolbar select { padding: 0.4rem 0.6rem; border: 1px solid var(--booking-line); border-radius: 6px; background: var(--booking-paper); color: var(--booking-ink); }
+.payment-toolbar-spacer { flex: 1 1 auto; }
+
+.payment-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem; }
+.payment-card { background: var(--booking-paper); border: 1px solid var(--booking-line); border-radius: 8px; padding: 0.75rem 1rem; }
+.payment-card span { display: block; font-size: 0.8rem; color: var(--booking-muted); }
+.payment-card strong { font-size: 1.15rem; color: var(--booking-forest); }
+
+.payment-table-wrap { overflow-x: auto; }
+.payment-table { width: 100%; border-collapse: collapse; background: var(--booking-paper); }
+.payment-table th, .payment-table td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--booking-line); text-align: left; vertical-align: top; font-size: 0.92rem; }
+.payment-table th { background: var(--booking-wash); color: var(--booking-ink); white-space: nowrap; }
+.payment-table .payment-amount { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.payment-table-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.payment-link { background: none; border: 0; padding: 0; color: var(--booking-leaf); text-decoration: underline; cursor: pointer; text-align: left; }
+
+.payment-status-pendiente { background: #f6e7c8; color: #6f4e0c; }
+.payment-status-parcial { background: #dde8f4; color: #1f4a72; }
+.payment-status-pagado, .payment-status-vigente { background: #dcebdc; color: #25502b; }
+.payment-status-anulado { background: #eadada; color: var(--booking-danger); }
+.payment-credit-badge { display: inline-block; margin-top: 0.25rem; padding: 0.1rem 0.5rem; border-radius: 999px; background: #e6f0e3; color: var(--booking-forest); font-size: 0.78rem; }
+.payment-drop-warning { display: block; margin-top: 0.25rem; color: var(--booking-danger); font-size: 0.82rem; }
+
+.payment-detail { margin-top: 1.5rem; padding: 1rem; background: var(--booking-wash); border: 1px solid var(--booking-line); border-radius: 8px; }
+.payment-detail h3, .payment-detail h4 { color: var(--booking-forest); }
+
+.payment-modal-backdrop { position: fixed; inset: 0; z-index: 1050; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(38, 54, 48, 0.55); }
+.payment-modal { width: min(520px, 100%); max-height: 90vh; overflow-y: auto; background: var(--booking-paper); border-radius: 10px; padding: 1.25rem; }
+.payment-modal-message { margin-bottom: 0.75rem; color: var(--booking-ink); }
+.payment-modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.payment-field { display: flex; flex-direction: column; margin-bottom: 0.75rem; }
+.payment-field label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; }
+.payment-field-check label { flex-direction: row; align-items: center; gap: 0.5rem; }
+.payment-field input, .payment-field select, .payment-field textarea { padding: 0.45rem 0.6rem; border: 1px solid var(--booking-line); border-radius: 6px; }
+.payment-surplus { padding: 0.6rem 0.8rem; border-radius: 6px; background: #eef3e6; border: 1px solid var(--booking-line); font-size: 0.9rem; }
+
+@media (max-width: 640px) {
+  .payment-table th, .payment-table td { padding: 0.45rem; font-size: 0.85rem; }
+  .payment-modal-actions { flex-direction: column-reverse; }
+}

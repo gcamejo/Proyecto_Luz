@@ -4,6 +4,7 @@ Disallow: /login
 Disallow: /cargarFicha
 Disallow: /reservarCiclo
 Disallow: /misReservas
+Disallow: /misPagos
 Disallow: /perfil
 Disallow: /miPerfil
 Disallow: /admin

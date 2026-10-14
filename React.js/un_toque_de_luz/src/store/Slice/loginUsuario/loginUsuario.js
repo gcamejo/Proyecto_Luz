@@ -56,6 +56,7 @@ export const deleteUsuario = () => (dispatch) => {
     dispatch(setUsuarioLogueado(null))
     dispatch(setToken(null))
     dispatch(setCodigo(null))
+    dispatch(setError(null))
     
 }
 

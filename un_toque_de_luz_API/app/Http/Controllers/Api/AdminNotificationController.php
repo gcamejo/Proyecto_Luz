@@ -36,4 +36,22 @@ class AdminNotificationController extends Controller
             'unread_count' => $request->user()->unreadNotifications()->count(),
         ]);
     }
+
+    public function destroy(Request $request, $notificationId)
+    {
+        $notification = $request->user()->notifications()->where('id', $notificationId)->firstOrFail();
+
+        if (!$notification->read_at) {
+            return response()->json([
+                'message' => 'Leé la notificación antes de eliminarla.',
+            ], 409);
+        }
+
+        $notification->delete();
+
+        return response()->json([
+            'message' => 'Notification deleted.',
+            'unread_count' => $request->user()->unreadNotifications()->count(),
+        ]);
+    }
 }

@@ -2,12 +2,16 @@
 
 namespace App\Providers;
 
+use App\Models\Cargo;
 use App\Models\Clase;
 use App\Models\Inscripcion;
+use App\Models\Pago;
+use App\Models\PagoAplicacion;
 use App\Models\Recuperacion;
 use App\Models\Reserva;
 use App\Policies\BookingAdminPolicy;
 use App\Policies\InscripcionPolicy;
+use App\Policies\PaymentAdminPolicy;
 use App\Policies\RecuperacionPolicy;
 use App\Policies\ReservaPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -25,6 +29,9 @@ class AuthServiceProvider extends ServiceProvider
         Inscripcion::class => InscripcionPolicy::class,
         Reserva::class => ReservaPolicy::class,
         Recuperacion::class => RecuperacionPolicy::class,
+        Cargo::class => PaymentAdminPolicy::class,
+        Pago::class => PaymentAdminPolicy::class,
+        PagoAplicacion::class => PaymentAdminPolicy::class,
     ];
 
     /**

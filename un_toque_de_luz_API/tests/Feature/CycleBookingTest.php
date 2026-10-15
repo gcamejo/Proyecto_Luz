@@ -522,7 +522,7 @@ class CycleBookingTest extends TestCase
         $response = $this->postJson("/api/booking/recoveries/{$credit->id}/book", ['clase_id' => $destination->id])
             ->assertCreated();
         $this->assertSame('recuperacion', $response->json('tipo'));
-        $this->assertSame((string) $sourceEnrollment->id, $response->json('inscripcion_id'));
+        $this->assertSame($sourceEnrollment->id, $response->json('inscripcion_id'));
         $this->assertSame('usada', $credit->fresh()->estado);
 
         $expiredSourceClass = $this->makeClass($sourceCycle, $schedule, '2026-09-28', '10:00:00');

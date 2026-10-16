@@ -13,11 +13,11 @@ class YoguiniFactory extends Factory
     public function definition()
     {
         return [
-            'nombre' => $this->faker->firstName(),
-            'apellido' => $this->faker->lastName(),
-            'direccion' => $this->faker->streetAddress(),
+            'nombre' => substr($this->faker->firstName(), 0, 30),
+            'apellido' => substr($this->faker->lastName(), 0, 30),
+            'direccion' => substr($this->faker->streetAddress(), 0, 30),
             'numero' => $this->faker->numberBetween(1, 9999),
-            'telefono' => $this->faker->phoneNumber(),
+            'telefono' => substr($this->faker->phoneNumber(), 0, 30),
             'fechaNacimiento' => '1990-01-01',
             'email' => $this->faker->unique()->safeEmail(),
             'password' => Hash::make('password'),

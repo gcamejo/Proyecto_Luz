@@ -432,3 +432,65 @@ Registro manual de pagos de alumnos por mes, con pagos parciales, saldos y saldo
 ## Total real de tests
 
 Última corrida completa: Laravel `php artisan test` -> **88 tests** (86 aprobados, 2 omitidos de concurrencia MySQL opt-in, 0 fallidos); frontend `npm test` -> **15 tests** aprobados; `npm run build` -> correcto.
+
+## Migraciones Laravel 12 y despliegue inicial
+
+Actualizado: 2026-10-16. Esta sección es la referencia vigente para `api.untoquedeluz`; las notas históricas anteriores describen entregas previas.
+
+### Esquema y migraciones finales
+
+- Una migración creadora por tabla de la API. Se quitaron las migraciones scaffold de `users`/`sessions`/`password_reset_tokens`, `cache` y `jobs`/`failed_jobs`; esos drivers no se usan en la instalación nueva. En `.env.example` y `.env.production.example`: `CACHE_STORE=file`, `SESSION_DRIVER=file`, `QUEUE_CONNECTION=sync`.
+- `2019_12_14_000001_create_personal_access_tokens_table.php` es la única creadora de `personal_access_tokens` y usa el esquema Sanctum 4. La migración `2026_10_16_100000_reconcile_personal_access_tokens_for_sanctum_v4.php` agrega `expires_at` con índice solo si falta y deja `name` como `TEXT NOT NULL` en MySQL/MariaDB.
+- `actividades` y `yoguinis` se crean sin timestamps, con la nulabilidad, longitudes y collation legacy. `actividades.id` es `INT(11) UNSIGNED`; `yoguinis.id` es `INT(11)` firmado para mantener compatibles sus FKs.
+- `2026_10_09_130000_allow_reusing_cancelled_class_slots.php` verifica índices existentes y conserva primero el índice que requiere la FK antes de reemplazar la unicidad anterior.
+- `users`, `failed_jobs` y `password_resets` pueden seguir existiendo en una base legacy, pero no se crean en una instalación nueva. Si en el futuro se cambia cache/session/queue a drivers de base de datos, se agrega entonces la migración correspondiente.
+
+### Cuadro de diferencias: MariaDB real frente al fresh
+
+Comparación final `mysqldump --no-data` ejecutada después de aplicar la migración autorizada en `un_toque_de_luz`. Se compararon columnas, tipos, nulabilidad, defaults, índices, FKs y reglas de FK. Las 17 tablas de aplicación coinciden exactamente entre `un_toque_de_luz_scratch` y la base real; ambas incluyen además la tabla técnica `migrations`. La base real conserva las tablas legacy adicionales `users`, `failed_jobs` y `password_resets`.
+
+La diferencia que existía antes de migrar quedó resuelta:
+
+| Tabla | Columna | Real antes | Real después / fresh | Resultado |
+|---|---|---|---|---|
+| `personal_access_tokens` | `name` | `VARCHAR(255) NOT NULL` | `TEXT NOT NULL` | Aplicado para Sanctum 4. |
+| `personal_access_tokens` | `expires_at` | No existía | `TIMESTAMP NULL`, después de `last_used_at`, con índice | Agregado por la migración idempotente. |
+| Tablas API restantes | Columnas, tipos, índices y FKs | Coincidían | Coinciden | Sin diferencias. |
+| `users`, `failed_jobs`, `password_resets` | Tabla completa | Existen solo en la base legacy | No se crean en fresh | Conservadas sin cambios. |
+
+`actividades.id` se verificó como `INT(11) UNSIGNED` también en el fresh. Los flujos de administración y perfil guardaron valores vacíos como `NULL` en las columnas nullable, sin errores por `NOT NULL` ni truncamiento de longitudes.
+
+### Verificación de esta etapa
+
+- `php artisan migrate:fresh --seed --force` en MySQL `un_toque_de_luz_scratch`: correcto; 17 tablas de aplicación más `migrations`.
+- Clone descartable `un_toque_de_luz_reconciled_scratch`, restaurado desde el backup y migrado: correcto. Los conteos de las 20 tablas existentes antes/después fueron iguales. Los 165 tokens de Sanctum mantuvieron el mismo conteo y checksum agregado.
+- Comparación no-data final: las 17 tablas de aplicación del fresh y la base real migrada son idénticas; sin diferencias de columnas, tipos, índices ni FKs. Las tablas legacy adicionales están enumeradas arriba.
+- Suite MySQL sobre scratch: `php vendor/bin/phpunit --configuration phpunit.mysql.xml` -> 94 tests, 546 assertions, 2 pruebas de concurrencia omitidas por opt-in.
+- Suite Laravel SQLite: `php artisan test --compact` -> 93 tests aprobados, 547 assertions, 2 pruebas de concurrencia omitidas por opt-in.
+- Frontend: `npm test` -> 15/15 aprobados; `npm run build` -> correcto. Vite mantiene el warning preexistente de `/img/fondo_1.jpg`, que queda sin resolver al build y se busca en runtime.
+- Incluye login que persiste y usa un token Sanctum, CRUD de actividades y yoguinis, guardado de campos vacíos, edición de perfil/cambio de contraseña y las consultas usadas por `/adminTurnos` (`booking/admin/cycles` y `booking/admin/classes`). No hubo errores de columnas `NOT NULL` ni tipos en esos flujos.
+- `ConfiguracionSeeder` fue verificado como idempotente y fija `horas_aviso_minimas = 24`.
+- `php artisan migrate --pretend --force` mostró únicamente `2026_10_16_100000_reconcile_personal_access_tokens_for_sanctum_v4`: agregar `expires_at`, agregar su índice y modificar `name` a `TEXT NOT NULL`. Después de la confirmación explícita se ejecutó `php artisan migrate`; Artisan registró la migración en el lote 10, el historial quedó en 15 registros, y los 165 tokens conservaron el mismo checksum agregado.
+- Backup previo, fuera del repositorio: `C:\Users\gcamejo\Backups\un_toque_de_luz\un_toque_de_luz_pre_migrations_20261016_110053.sql`, 66.851 bytes, SHA-256 `127F2CE408360E838EA7B01276846386CFAFAEA9B393E0EEC8E753D9F777CEDB`.
+
+### Seeders y primer despliegue
+
+Seeders que se ejecutan en producción:
+
+- `php artisan db:seed --class=ConfiguracionSeeder --force` -> fija idempotentemente `horas_aviso_minimas = 24`.
+- `php artisan db:seed --class=FeriadosArgentinaSeeder --force` -> carga idempotentemente los feriados nacionales argentinos del año actual y el siguiente; calcula Carnaval y Viernes Santo y aplica los traslados nacionales. No agrega días turísticos puente.
+- `php artisan db:seed --class=AdminInicialSeeder --force` -> crea/promueve el administrador indicado por `INITIAL_ADMIN_EMAIL` y `INITIAL_ADMIN_PASSWORD`, o solicita email y contraseña con entrada oculta en consola. La contraseña se hashea; al repetirlo no se reemplaza una contraseña existente. No hay credenciales en el código ni en los ejemplos.
+
+`DatabaseSeeder` ejecuta solo `ConfiguracionSeeder` y `FeriadosArgentinaSeeder`; el admin se ejecuta explícitamente para evitar que `migrate:fresh --seed` dependa de credenciales interactivas.
+
+La instalación de producción es una base MySQL/MariaDB **vacía**:
+
+```sh
+php artisan key:generate --show
+php artisan migrate:fresh --seed --force
+php artisan db:seed --class=AdminInicialSeeder --force
+```
+
+Generá una clave nueva en el servidor con `key:generate --show` y cargá ese valor solo en el `.env` privado de producción. No copies la `APP_KEY` de desarrollo ni publiques la salida del comando. `migrate:fresh` elimina todas las tablas y datos: es solo para la instalación inicial en la base vacía, nunca para actualizar una instalación con datos.
+
+La base local existente `un_toque_de_luz` ya recibió la migración de Sanctum después del backup y la confirmación explícita; el estado final se comparó con el fresh y no presenta diferencias en las tablas de aplicación. Para otras instalaciones existentes, crear primero un backup, revisar `php artisan migrate --pretend --force` y aplicar solo después de confirmar el destino. No usar `migrate:fresh` sobre una base con datos.

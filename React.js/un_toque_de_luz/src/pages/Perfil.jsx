@@ -174,8 +174,7 @@ const Perfil = () => {
               autoComplete="given-name"
               value={values.nombre}
               onChange={updateField}
-              required
-              maxLength="255"
+              maxLength="30"
               disabled={saving}
             />
           </label>
@@ -188,8 +187,7 @@ const Perfil = () => {
               autoComplete="family-name"
               value={values.apellido}
               onChange={updateField}
-              required
-              maxLength="255"
+              maxLength="30"
               disabled={saving}
             />
           </label>
@@ -202,8 +200,7 @@ const Perfil = () => {
               autoComplete="email"
               value={values.email}
               onChange={updateField}
-              required
-              maxLength="255"
+              maxLength="100"
               disabled={saving}
             />
           </label>
@@ -216,8 +213,7 @@ const Perfil = () => {
               autoComplete="tel"
               value={values.telefono}
               onChange={updateField}
-              required
-              maxLength="255"
+              maxLength="30"
               disabled={saving}
             />
           </label>
@@ -229,7 +225,6 @@ const Perfil = () => {
               type="date"
               value={values.fechaNacimiento}
               onChange={updateField}
-              required
               disabled={saving}
             />
           </label>
@@ -242,8 +237,7 @@ const Perfil = () => {
               autoComplete="street-address"
               value={values.direccion}
               onChange={updateField}
-              required
-              maxLength="255"
+              maxLength="30"
               disabled={saving}
             />
           </label>
@@ -257,7 +251,6 @@ const Perfil = () => {
               step="1"
               value={values.numero}
               onChange={updateField}
-              required
               disabled={saving}
             />
           </label>

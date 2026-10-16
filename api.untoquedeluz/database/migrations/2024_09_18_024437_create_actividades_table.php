@@ -13,18 +13,18 @@ class CreateActividadesTable extends Migration
      */
     public function up()
     {
-        if (Schema::hasTable('actividades')) {
-            return;
-        }
-
         Schema::create('actividades', function (Blueprint $table) {
-            $table->id();
-            $table->string('urlImagen');
-            $table->string('titulo');
-            $table->string('descripcion');
-            $table->string('horarios');
-            $table->timestamps();
+            $table->charset('utf8mb4');
+            $table->collation('utf8mb4_general_ci');
+            $table->increments('id');
+            $table->string('urlImagen', 30)->nullable();
+            $table->string('titulo', 30)->nullable();
+            $table->string('descripcion', 500)->nullable();
+            $table->string('horarios', 30)->nullable();
         });
+        if (DB::connection()->getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `actividades` MODIFY `id` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT');
+        }
     }
 
     /**

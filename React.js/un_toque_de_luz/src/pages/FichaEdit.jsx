@@ -63,25 +63,25 @@ const FichaEdit = () => {
           {error && <p className="yoguini-message yoguini-message-error" role="alert">{error}</p>}
           <div className="yoguini-form-fields">
             <label className="yoguini-field">Nombre
-              <input name="nombre" autoComplete="given-name" value={values.nombre} onChange={updateField} required maxLength="255" />
+              <input name="nombre" autoComplete="given-name" value={values.nombre} onChange={updateField} maxLength="30" />
             </label>
             <label className="yoguini-field">Apellido
-              <input name="apellido" autoComplete="family-name" value={values.apellido} onChange={updateField} required maxLength="255" />
+              <input name="apellido" autoComplete="family-name" value={values.apellido} onChange={updateField} maxLength="30" />
             </label>
             <label className="yoguini-field yoguini-field-wide">Dirección
-              <input name="direccion" autoComplete="street-address" value={values.direccion} onChange={updateField} required maxLength="255" />
+              <input name="direccion" autoComplete="street-address" value={values.direccion} onChange={updateField} maxLength="30" />
             </label>
             <label className="yoguini-field">Número
-              <input name="numero" type="number" min="0" step="1" value={values.numero} onChange={updateField} required />
+              <input name="numero" type="number" min="0" step="1" value={values.numero} onChange={updateField} />
             </label>
             <label className="yoguini-field">Teléfono
-              <input name="telefono" type="tel" autoComplete="tel" value={values.telefono} onChange={updateField} required maxLength="255" />
+              <input name="telefono" type="tel" autoComplete="tel" value={values.telefono} onChange={updateField} maxLength="30" />
             </label>
             <label className="yoguini-field">Fecha de nacimiento
-              <input name="fechaNacimiento" type="date" value={values.fechaNacimiento} onChange={updateField} required />
+              <input name="fechaNacimiento" type="date" value={values.fechaNacimiento} onChange={updateField} />
             </label>
             <label className="yoguini-field yoguini-field-wide">Correo electrónico
-              <input name="email" type="email" autoComplete="email" value={values.email} onChange={updateField} required maxLength="255" />
+              <input name="email" type="email" autoComplete="email" value={values.email} onChange={updateField} maxLength="100" />
             </label>
           </div>
           <div className="yoguini-form-actions">

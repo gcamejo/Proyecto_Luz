@@ -746,6 +746,15 @@ class CycleBookingTest extends TestCase
         $this->reserve($student, $enrollment, $firstClass);
         $this->actingAs($admin, 'sanctum');
 
+        $this->getJson('/api/booking/admin/cycles')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $cycle->id]);
+
+        $this->getJson('/api/booking/admin/classes')
+            ->assertOk()
+            ->assertJsonPath('0.id', $firstClass->id)
+            ->assertJsonPath('0.reservas.0.yoguini.id', $student->id);
+
         $this->getJson("/api/booking/admin/classes?fecha=2026-10-06&ciclo_id={$cycle->id}")
             ->assertOk()
             ->assertJsonCount(1)
@@ -795,14 +804,23 @@ class CycleBookingTest extends TestCase
         $schedule = $this->schedule(2);
         $class = $this->makeClass($cycle, $schedule, '2026-10-06', '10:00:00');
         $enrollment = $this->enrollment($student, $cycle);
-        $this->reserve($student, $enrollment, $class);
-        Feriado::create(['fecha' => '2026-10-10', 'descripcion' => 'Authorization test']);
+        $reservation = $this->reserve($student, $enrollment, $class);
+        $holiday = Feriado::create(['fecha' => '2026-10-10', 'descripcion' => 'Authorization test']);
+        $bindingIds = [
+            'clase' => $class->id,
+            'ciclo' => $cycle->id,
+            'horario' => $schedule->id,
+            'reserva' => $reservation->id,
+            'feriado' => $holiday->id,
+        ];
         $routes = collect(Route::getRoutes()->getRoutes())
             ->filter(function ($route) {
                 return strpos($route->uri(), 'api/booking/admin/') === 0;
             })
-            ->flatMap(function ($route) {
-                $uri = '/'.preg_replace('/\{[^}]+\??\}/', '1', $route->uri());
+            ->flatMap(function ($route) use ($bindingIds) {
+                $uri = '/'.preg_replace_callback('/\{([^}?]+)\??\}/', function ($match) use ($bindingIds) {
+                    return $bindingIds[$match[1]] ?? '1';
+                }, $route->uri());
                 return collect($route->methods())
                     ->filter(function ($method) {
                         return in_array($method, ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], true);

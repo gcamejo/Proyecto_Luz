@@ -79,8 +79,7 @@ const ActividadesCreate = () => {
                 value={titulo}
                 onChange={handleInputChange}
                 placeholder='Ej.: Yoga suave'
-                maxLength={120}
-                required
+                maxLength={30}
               />
             </div>
 
@@ -93,7 +92,7 @@ const ActividadesCreate = () => {
                 onChange={handleInputChange}
                 placeholder='Contá brevemente en qué consiste la actividad'
                 rows={5}
-                required
+                maxLength={500}
               />
             </div>
 
@@ -106,7 +105,7 @@ const ActividadesCreate = () => {
                 value={horarios}
                 onChange={handleInputChange}
                 placeholder='Ej.: Martes y jueves, 18:00'
-                required
+                maxLength={30}
               />
             </div>
           </div>

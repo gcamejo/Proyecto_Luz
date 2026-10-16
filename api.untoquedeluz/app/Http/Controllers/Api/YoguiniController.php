@@ -41,14 +41,14 @@ class YoguiniController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'direccion' => 'required|string|max:255',
+            'nombre' => 'required|string|max:30',
+            'apellido' => 'required|string|max:30',
+            'direccion' => 'required|string|max:30',
             'numero' => 'required|integer|min:0',
-            'telefono' => 'required|string|max:255',
+            'telefono' => 'required|string|max:30',
             'fechaNacimiento' => 'required|date',
-            'email' => 'required|email|max:255|unique:yoguinis,email',
-            'password' => 'required|string|min:8',
+            'email' => 'required|email|max:100|unique:yoguinis,email',
+            'password' => 'required|string|min:8|max:100',
         ]);
 
         $Yoguini = new Yoguini($validated);
@@ -97,13 +97,13 @@ class YoguiniController extends Controller
     {
         $Yoguini = Yoguini::findOrFail($id);
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'direccion' => 'required|string|max:255',
-            'numero' => 'required|integer|min:0',
-            'telefono' => 'required|string|max:255',
-            'fechaNacimiento' => 'required|date',
-            'email' => ['required', 'email', 'max:255', Rule::unique('yoguinis', 'email')->ignore($Yoguini->id)],
+            'nombre' => 'nullable|string|max:30',
+            'apellido' => 'nullable|string|max:30',
+            'direccion' => 'nullable|string|max:30',
+            'numero' => 'nullable|integer|min:0',
+            'telefono' => 'nullable|string|max:30',
+            'fechaNacimiento' => 'nullable|date',
+            'email' => ['nullable', 'email', 'max:100', Rule::unique('yoguinis', 'email')->ignore($Yoguini->id)],
         ]);
 
         $Yoguini->fill($validated);
@@ -183,14 +183,14 @@ class YoguiniController extends Controller
         $notificationEmail = $user->email;
         $notificationName = trim($user->nombre.' '.$user->apellido);
         $validated = $request->validate([
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'direccion' => 'required|string|max:255',
-            'numero' => 'required|integer|min:0',
-            'telefono' => 'required|string|max:255',
-            'fechaNacimiento' => 'required|date',
-            'email' => ['required', 'email', 'max:255', Rule::unique('yoguinis', 'email')->ignore($user->id)],
-            'password' => 'nullable|string|min:8|confirmed',
+            'nombre' => 'nullable|string|max:30',
+            'apellido' => 'nullable|string|max:30',
+            'direccion' => 'nullable|string|max:30',
+            'numero' => 'nullable|integer|min:0',
+            'telefono' => 'nullable|string|max:30',
+            'fechaNacimiento' => 'nullable|date',
+            'email' => ['nullable', 'email', 'max:100', Rule::unique('yoguinis', 'email')->ignore($user->id)],
+            'password' => 'nullable|string|min:8|max:100|confirmed',
         ]);
 
         if (!empty($validated['password'])) {

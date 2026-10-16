@@ -63,7 +63,7 @@ padding: 10px;
   place-items: center;
   margin: -20px;
   padding: 48px 20px;
-  background: linear-gradient(120deg, rgba(29, 58, 45, .82), rgba(55, 76, 59, .34)), url('/img/fondo_1.jpg') center / cover;
+  background: linear-gradient(120deg, rgba(29, 58, 45, .82), rgba(55, 76, 59, .34)), url('/img/ActiYoga.jpg') center / cover;
 }
 
 .form-login {

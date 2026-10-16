@@ -13,6 +13,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        $this->call(ConfiguracionSeeder::class);
+        $this->call([
+            ConfiguracionSeeder::class,
+            FeriadosArgentinaSeeder::class,
+        ]);
     }
 }

@@ -13,22 +13,20 @@ class CreateYoguinisTable extends Migration
      */
     public function up()
     {
-        if (Schema::hasTable('yoguinis')) {
-            return;
-        }
-
         Schema::create('yoguinis', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
-            $table->string('apellido');
-            $table->string('direccion');
-            $table->integer('numero');
-            $table->string('telefono');
-            $table->string('fechaNacimiento');
-            $table->string('email');
-            $table->string('password');
-            $table->integer('perfil');
-            $table->timestamps();
+            $table->charset('utf8mb4');
+            $table->collation('utf8mb4_general_ci');
+            // Signed INT like the legacy table: later user_id foreign keys are signed integers.
+            $table->integer('id', true);
+            $table->string('nombre', 30)->nullable();
+            $table->string('apellido', 30)->nullable();
+            $table->string('direccion', 30)->nullable();
+            $table->integer('numero')->nullable();
+            $table->string('telefono', 30)->nullable();
+            $table->string('fechaNacimiento', 10)->nullable();
+            $table->string('email', 100)->nullable();
+            $table->string('password', 100)->nullable();
+            $table->string('perfil', 11)->nullable();
         });
     }
 

@@ -108,15 +108,15 @@ const ActividadesEdit = () => {
             </div>
             <div className='actividad-form-field'>
               <label htmlFor='titulo'>Título *</label>
-              <input id='titulo' name='titulo' type='text' value={titulo} onChange={handleInputChange} maxLength={120} required />
+              <input id='titulo' name='titulo' type='text' value={titulo} onChange={handleInputChange} maxLength={30} />
             </div>
             <div className='actividad-form-field'>
               <label htmlFor='descripcion'>Descripción *</label>
-              <textarea id='descripcion' name='descripcion' value={descripcion} onChange={handleInputChange} rows={5} required />
+              <textarea id='descripcion' name='descripcion' value={descripcion} onChange={handleInputChange} rows={5} maxLength={500} />
             </div>
             <div className='actividad-form-field'>
               <label htmlFor='horarios'>Horarios *</label>
-              <input id='horarios' name='horarios' type='text' value={horarios} onChange={handleInputChange} required />
+              <input id='horarios' name='horarios' type='text' value={horarios} onChange={handleInputChange} maxLength={30} />
             </div>
           </div>
         </div>

@@ -28,11 +28,18 @@ class ActividadController extends Controller
      */
     public function create(Request $request)
     {
+        $validated = $request->validate([
+            'urlImagen' => 'nullable|string|max:30',
+            'titulo' => 'nullable|string|max:30',
+            'descripcion' => 'nullable|string|max:500',
+            'horarios' => 'nullable|string|max:30',
+        ]);
+
         $Actividad = new Actividade;
-        $Actividad->urlImagen = $request->input('urlImagen') ?: 'logo_principal.jpg';
-        $Actividad->titulo = $request->titulo;
-        $Actividad->descripcion = $request->descripcion;
-        $Actividad->horarios = $request->horarios;
+        $Actividad->urlImagen = $validated['urlImagen'] ?? 'logo_principal.jpg';
+        $Actividad->titulo = $validated['titulo'] ?? null;
+        $Actividad->descripcion = $validated['descripcion'] ?? null;
+        $Actividad->horarios = $validated['horarios'] ?? null;
         
         $Actividad->save();
 
@@ -90,12 +97,15 @@ class ActividadController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $Actividad = Actividade::find($id);
-        $Actividad->urlImagen = $request->urlImagen;
-        $Actividad->titulo = $request->titulo;
-        $Actividad->descripcion = $request->descripcion;
-        $Actividad->horarios = $request->horarios;
+        $Actividad = Actividade::findOrFail($id);
+        $validated = $request->validate([
+            'urlImagen' => 'nullable|string|max:30',
+            'titulo' => 'nullable|string|max:30',
+            'descripcion' => 'nullable|string|max:500',
+            'horarios' => 'nullable|string|max:30',
+        ]);
 
+        $Actividad->fill($validated);
         $Actividad->save();
     }
 

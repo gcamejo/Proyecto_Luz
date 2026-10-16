@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import axios from "../../../api/axios";
 
 const apiEndPoint = 'api/yoguinis/';
+const compareByName = (left, right) => (left.nombre || '').localeCompare(right.nombre || '')
 
 export const yoguinisSlice = createSlice({
     name:'yoguinis',
@@ -22,7 +23,7 @@ export const yoguinisSlice = createSlice({
             estado.ficha = action.payload
             estado.fichasyoguinis = estado.fichasyoguinis.map(ficha =>
                 ficha.id === action.payload.id ? action.payload : ficha
-            ).sort((a, b) => a.nombre.localeCompare(b.nombre))
+            ).sort(compareByName)
         },
         removeFicha:(estado,action)=>{
             estado.fichasyoguinis = estado.fichasyoguinis.filter(ficha => ficha.id !== action.payload)
@@ -30,7 +31,7 @@ export const yoguinisSlice = createSlice({
         },
         addFicha:(estado,action)=>{
             estado.fichasyoguinis = [...estado.fichasyoguinis, action.payload]
-                .sort((a, b) => a.nombre.localeCompare(b.nombre))
+                .sort(compareByName)
         },
         setLoading:(estado,action)=>{
             estado.isLoading = action.payload
@@ -52,7 +53,7 @@ export const getFichasYoguinis = () => async (dispatch) => {
     dispatch(setError(null))
     try {
         const { data } = await axios.get(apiEndPoint)
-        dispatch(setFichasYoguinis([...data].sort((a, b) => a.nombre.localeCompare(b.nombre))))
+        dispatch(setFichasYoguinis([...data].sort(compareByName)))
         return data
     } catch (error) {
         dispatch(setError(error.response?.data?.message || error.message))

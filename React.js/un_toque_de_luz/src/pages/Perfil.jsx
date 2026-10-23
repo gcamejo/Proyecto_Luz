@@ -28,6 +28,9 @@ const Perfil = () => {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showPasswordFields, setShowPasswordFields] = useState(false)
+  const [privacyBusy, setPrivacyBusy] = useState(false)
+  const [privacyMessage, setPrivacyMessage] = useState('')
+  const [privacyError, setPrivacyError] = useState('')
 
   useEffect(() => {
     if (!token) {
@@ -139,6 +142,43 @@ const Perfil = () => {
   }
 
   const isAdmin = usuarioLogueado?.perfil === 'Admin'
+
+  const exportPersonalData = async () => {
+    setPrivacyBusy(true)
+    setPrivacyError('')
+    setPrivacyMessage('')
+    try {
+      const { data } = await axios.get('api/profile/export', { responseType: 'blob' })
+      const url = URL.createObjectURL(data)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = 'mis-datos.json'
+      anchor.click()
+      URL.revokeObjectURL(url)
+      setPrivacyMessage('La descarga de tus datos comenzó.')
+    } catch (requestError) {
+      setPrivacyError(requestError.response?.data?.message || 'No se pudo preparar la descarga.')
+    } finally {
+      setPrivacyBusy(false)
+    }
+  }
+
+  const requestDataDeletion = async () => {
+    const confirmed = window.confirm('Esto enviará una solicitud a administración. No elimina automáticamente tus datos. ¿Querés continuar?')
+    if (!confirmed) return
+
+    setPrivacyBusy(true)
+    setPrivacyError('')
+    setPrivacyMessage('')
+    try {
+      const { data } = await axios.post('api/profile/deletion-request')
+      setPrivacyMessage(data.message)
+    } catch (requestError) {
+      setPrivacyError(requestError.response?.data?.message || 'No se pudo enviar la solicitud.')
+    } finally {
+      setPrivacyBusy(false)
+    }
+  }
 
   if (loading && !values.nombre) {
     return <p className="yoguini-message yoguini-page-status" role="status">Cargando perfil...</p>
@@ -310,6 +350,21 @@ const Perfil = () => {
           </Link>
         </div>
       </form>
+
+      <section className='yoguini-privacy-section' aria-labelledby='privacy-tools-title'>
+        <h2 id='privacy-tools-title'>Privacidad</h2>
+        <p>Podés descargar los datos asociados a tu cuenta o enviar una solicitud a administración. La solicitud no borra automáticamente la información.</p>
+        {privacyMessage && <p className='yoguini-message yoguini-message-success' role='status'>{privacyMessage}</p>}
+        {privacyError && <p className='yoguini-message yoguini-message-error' role='alert'>{privacyError}</p>}
+        <div className='yoguini-form-actions'>
+          <button className='yoguini-button yoguini-button-secondary' type='button' disabled={privacyBusy} onClick={exportPersonalData}>
+            {privacyBusy ? 'Procesando…' : 'Descargar mis datos (JSON)'}
+          </button>
+          <button className='yoguini-button yoguini-button-danger' type='button' disabled={privacyBusy} onClick={requestDataDeletion}>
+            Solicitar eliminación de mis datos
+          </button>
+        </div>
+      </section>
     </section>
   )
 }

@@ -96,8 +96,8 @@ const AdminNotifications = () => {
       <button
         className="admin-notifications-trigger"
         type="button"
-        title="Notificaciones de registros"
-        aria-label={`Notificaciones de registros, ${unreadCount} sin leer`}
+        title="Avisos de administración"
+        aria-label={`Avisos de administración, ${unreadCount} sin leer`}
         aria-expanded={open}
         aria-controls="admin-notifications-panel"
         onClick={toggleList}
@@ -108,7 +108,7 @@ const AdminNotifications = () => {
 
       {open && <section className="admin-notifications-panel" id="admin-notifications-panel" aria-label="Notificaciones de nuevos registros">
         <header className="admin-notifications-heading">
-          <h2>Registros nuevos</h2>
+          <h2>Avisos de administración</h2>
           <span>{unreadCount} sin leer</span>
         </header>
         {actionError && <p className="admin-notifications-error" role="alert">{actionError}</p>}
@@ -119,7 +119,8 @@ const AdminNotifications = () => {
           {notifications.map(notification => (
             <li className={notification.read_at ? 'is-read' : 'is-unread'} key={notification.id}>
               <div className="admin-notification-details">
-                <strong>{notification.nombre}</strong>
+                <strong>{notification.tipo === 'solicitud_eliminacion' ? 'Solicitud de eliminación de datos' : 'Nuevo registro'}</strong>
+                <span>{notification.nombre}</span>
                 <a href={`mailto:${notification.email}`}>{notification.email}</a>
                 <time dateTime={notification.fecha}>{formatDate(notification.fecha)}</time>
               </div>

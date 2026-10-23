@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use App\Models\Cargo;
 use App\Models\Clase;
+use App\Models\Consentimiento;
 use App\Models\Inscripcion;
 use App\Models\Pago;
 use App\Models\PagoAplicacion;
 use App\Models\Recuperacion;
 use App\Models\Reserva;
 use App\Policies\BookingAdminPolicy;
+use App\Policies\ConsentimientoPolicy;
 use App\Policies\InscripcionPolicy;
 use App\Policies\PaymentAdminPolicy;
 use App\Policies\RecuperacionPolicy;
@@ -26,6 +28,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         Clase::class => BookingAdminPolicy::class,
+        Consentimiento::class => ConsentimientoPolicy::class,
         Inscripcion::class => InscripcionPolicy::class,
         Reserva::class => ReservaPolicy::class,
         Recuperacion::class => RecuperacionPolicy::class,

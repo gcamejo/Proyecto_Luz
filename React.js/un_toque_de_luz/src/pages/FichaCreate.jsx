@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
+import axios from '../api/axios'
 import { createFicha } from '../store/Slice/Yoguinis/yoguinis'
 import '../Styles/Yoguinis.css'
 import { safeInternalRedirect } from '../utils/safeInternalRedirect'
@@ -14,9 +15,11 @@ const FichaCreate = () => {
   const dispatch = useDispatch()
   const location = useLocation()
   const navigate = useNavigate()
-  const { token } = useSelector(state => state.token)
-  const isAdminCreate = Boolean(token)
-  const postRegistrationPath = safeInternalRedirect(new URLSearchParams(location.search).get('redirect'))
+  const { token, usuarioLogueado } = useSelector(state => state.token)
+  const isAdminCreate = Boolean(token && usuarioLogueado?.perfil === 'Admin')
+  const registrationParams = new URLSearchParams(location.search)
+  const postRegistrationPath = safeInternalRedirect(registrationParams.get('redirect'))
+  const returnPath = safeInternalRedirect(registrationParams.get('volver'))
   const [values, setValues] = useState({
     nombre: '', apellido: '', direccion: '', numero: '', telefono: '',
     fechaNacimiento: '', email: '', password: '', perfil: 'user'
@@ -37,8 +40,12 @@ const FichaCreate = () => {
 
     setSaving(true)
     try {
-      const { repassword, ...payload } = { ...values, perfil: 'user' }
-      await dispatch(createFicha(payload))
+      const payload = { ...values, perfil: 'user' }
+      if (isAdminCreate) {
+        await axios.post('api/admin/yoguinis', payload)
+      } else {
+        await dispatch(createFicha(payload))
+      }
       navigate(isAdminCreate ? '/verFichas' : postRegistrationPath === '/' ? '/login' : `/login?redirect=${encodeURIComponent(postRegistrationPath)}`)
     } catch (requestError) {
       setError(errorMessage(requestError))
@@ -88,11 +95,22 @@ const FichaCreate = () => {
           </label>
         </div>
 
+        {!isAdminCreate && <label className="legal-consent-field">
+          <input
+            type="checkbox"
+            name="acepta_legal"
+            checked={Boolean(values.acepta_legal)}
+            onChange={event => setValues(current => ({ ...current, acepta_legal: event.target.checked }))}
+            required
+          />
+          <span>Leí y acepto <a href='/privacidad' target='_blank' rel='noopener noreferrer'>la Política de Privacidad</a> y <a href='/terminos' target='_blank' rel='noopener noreferrer'>los Términos y Condiciones</a>.</span>
+        </label>}
+
         <div className="yoguini-form-actions">
           <button className="yoguini-button yoguini-button-primary" type="submit" disabled={saving}>
             {saving ? 'Guardando...' : 'Crear ficha'}
           </button>
-          <Link className="yoguini-button yoguini-button-secondary" to={isAdminCreate ? '/verFichas' : '/'}>Cancelar</Link>
+          <Link className="yoguini-button yoguini-button-secondary" to={isAdminCreate ? '/verFichas' : returnPath}>Volver</Link>
         </div>
       </form>
     </section>

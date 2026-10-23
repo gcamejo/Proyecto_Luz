@@ -26,8 +26,8 @@ class CycleBookingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Carbon::setTestNow(Carbon::parse('2026-10-01 08:00:00', 'UTC'));
-        config(['app.timezone' => 'UTC']);
+        config(['app.timezone' => 'America/Argentina/Buenos_Aires']);
+        Carbon::setTestNow(Carbon::parse('2026-10-01 08:00:00', config('app.timezone')));
     }
 
     protected function tearDown(): void
@@ -65,6 +65,12 @@ class CycleBookingTest extends TestCase
             'horario_id' => $thursday->id,
             'fecha' => '2026-10-08',
         ]);
+    }
+
+    public function test_booking_time_rules_use_buenos_aires_application_timezone()
+    {
+        $this->assertSame('America/Argentina/Buenos_Aires', config('app.timezone'));
+        $this->assertSame('America/Argentina/Buenos_Aires', Carbon::now()->timezoneName);
     }
 
     public function test_generation_reuses_a_cancelled_class_slot_without_deleting_its_history()
@@ -358,7 +364,7 @@ class CycleBookingTest extends TestCase
     public function test_cancelling_october_thirtieth_a_november_class_creates_a_november_credit()
     {
         Configuracion::create(['clave' => 'horas_aviso_minimas', 'valor' => '24']);
-        Carbon::setTestNow(Carbon::parse('2026-10-30 10:00:00', 'UTC'));
+        Carbon::setTestNow(Carbon::parse('2026-10-30 10:00:00', 'America/Argentina/Buenos_Aires'));
         $student = $this->yoguini();
         $cycle = $this->cycle('2026-10-01', '2026-11-30');
         $enrollment = $this->enrollment($student, $cycle);
@@ -409,8 +415,8 @@ class CycleBookingTest extends TestCase
 
     public function test_notice_threshold_at_midnight_uses_buenos_aires_timezone()
     {
-        config(['app.timezone' => 'America/Argentina/Buenos_Aires']);
         Carbon::setTestNow(Carbon::parse('2026-10-30 00:30:00', 'America/Argentina/Buenos_Aires'));
+        $this->assertSame('America/Argentina/Buenos_Aires', config('app.timezone'));
         Configuracion::create(['clave' => 'horas_aviso_minimas', 'valor' => '24']);
         $student = $this->yoguini();
         $cycle = $this->cycle('2026-10-01', '2026-10-31');
@@ -875,7 +881,7 @@ class CycleBookingTest extends TestCase
         $class = $this->makeClass($cycle, $schedule, '2026-10-06', '10:00:00');
         $reservation = $this->reserve($student, $enrollment, $class);
         $this->actingAs($admin, 'sanctum');
-        Carbon::setTestNow(Carbon::parse('2026-10-06 11:00:00', 'UTC'));
+        Carbon::setTestNow(Carbon::parse('2026-10-06 11:00:00', 'America/Argentina/Buenos_Aires'));
 
         $this->postJson("/api/booking/admin/classes/{$class->id}/complete")->assertOk();
 
@@ -887,6 +893,8 @@ class CycleBookingTest extends TestCase
 
     public function test_expiration_command_marks_only_available_credits_past_their_expiry_date()
     {
+        Carbon::setTestNow(Carbon::parse('2026-10-01 00:30:00', 'America/Argentina/Buenos_Aires'));
+        $this->assertSame('America/Argentina/Buenos_Aires', config('app.timezone'));
         $student = $this->yoguini();
         $cycle = $this->cycle('2026-09-01', '2026-10-31');
         $enrollment = $this->enrollment($student, $cycle);
@@ -903,13 +911,23 @@ class CycleBookingTest extends TestCase
             $this->makeClass($cycle, $schedule, '2026-09-15', '10:00:00'),
             'cancelada_con_aviso'
         );
+        $dueTodayReservation = $this->reserve(
+            $student,
+            $enrollment,
+            $this->makeClass($cycle, $schedule, '2026-09-22', '10:00:00'),
+            'cancelada_con_aviso'
+        );
         $expired = $this->credit($student, $enrollment, $expiredReservation, '2026-09-30');
         $available = $this->credit($student, $enrollment, $availableReservation, '2026-10-31');
+        $dueToday = $this->credit($student, $enrollment, $dueTodayReservation, '2026-10-01');
 
+        $this->artisan('booking:expire-credits')->assertExitCode(0);
         $this->artisan('booking:expire-credits')->assertExitCode(0);
 
         $this->assertSame('vencida', $expired->fresh()->estado);
         $this->assertSame('disponible', $available->fresh()->estado);
+        $this->assertSame('disponible', $dueToday->fresh()->estado);
+        $this->assertArrayHasKey('booking:expire-credits', \Illuminate\Support\Facades\Artisan::all());
     }
 
     private function yoguini($perfil = 'user')

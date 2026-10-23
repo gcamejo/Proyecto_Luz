@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import axios from '../api/axios'
 import useSWR from 'swr'
 import fetcher from '../api/fetcher'
+import { prioritizeCycle } from '../utils/cycleRegistrationFlow'
 import { BsCalendar2Week, BsClock, BsPeople } from 'react-icons/bs'
 import '../Styles/Reservas.css'
 
@@ -22,11 +24,14 @@ const scheduleOptions = cycle => {
 }
 
 const BookingStudent = () => {
+  const location = useLocation()
+  const preselectedCycleId = new URLSearchParams(location.search).get('ciclo_id')
   const [selectedSchedules, setSelectedSchedules] = useState({})
   const [savingCycle, setSavingCycle] = useState(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const { data: cycles = [], error: loadError, isLoading: loading, mutate: refreshCycles } = useSWR('api/booking/cycles/active', fetcher)
+  const displayedCycles = prioritizeCycle(cycles, preselectedCycleId)
 
   const toggleSchedule = (cycleId, scheduleId) => {
     setSelectedSchedules(current => {
@@ -71,15 +76,16 @@ const BookingStudent = () => {
         <div className='booking-empty'><h2>No hay ciclos abiertos</h2><p>Cuando haya nuevas fechas disponibles, aparecerán acá.</p></div>
       ) : (
         <div className='booking-cycle-list'>
-          {cycles.map(cycle => {
+          {displayedCycles.map(cycle => {
+            const isPreselected = String(cycle.id) === String(preselectedCycleId)
             const schedules = scheduleOptions(cycle)
             const selected = selectedSchedules[cycle.id] || []
             const correctSelection = selected.length === cycle.clases_por_semana
             return (
-              <article className='booking-cycle' key={cycle.id}>
+              <article className={`booking-cycle${isPreselected ? ' booking-cycle-preselected' : ''}`} key={cycle.id}>
                 <div className='booking-cycle-header'>
                   <div>
-                    <p className='booking-eyebrow'>Ciclo</p>
+                    <p className='booking-eyebrow'>{isPreselected ? 'Ciclo seleccionado' : 'Ciclo'}</p>
                     <h2>{cycle.nombre}</h2>
                   </div>
                   <p className='booking-price'>${Number(cycle.precio).toLocaleString('es-AR')}</p>

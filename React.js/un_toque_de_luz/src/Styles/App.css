@@ -24,15 +24,109 @@ main {
 }
 
 footer {
-  padding: 10px;
-  font-family: 'Trebuchet MS', sans-serif;
-  text-align: left;
-  background-color: #315344;
-  color: #f7f5ed;
+  padding: 0;
+  background: #243b32;
+  color: #f7f3e9;
 }
 
-.footer{
-  text-decoration-color: white;
+.site-footer {
+  padding: 42px max(24px, calc((100vw - 1180px) / 2)) 18px;
+  font-family: 'Trebuchet MS', sans-serif;
+}
+
+.site-footer-main {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 36px;
+  padding-bottom: 34px;
+}
+
+.site-footer-brand-name {
+  margin: 0 0 10px;
+  color: #f3d4a3;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 25px;
+}
+
+.site-footer-brand > p:last-child {
+  max-width: 260px;
+  margin: 0;
+  color: #d7e0d7;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.site-footer-group h2 {
+  margin: 2px 0 15px;
+  color: #f3d4a3;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.site-footer-contact-list,
+.site-footer-socials {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-footer-contact-list li,
+.site-footer-socials a {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #f7f3e9;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.site-footer-contact-list svg,
+.site-footer-socials svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #f3d4a3;
+  font-size: 16px;
+}
+
+.site-footer-contact-list a,
+.site-footer-socials a,
+.footer-legal-links a {
+  color: inherit;
+  text-underline-offset: 4px;
+}
+
+.site-footer-contact-list a:hover,
+.site-footer-socials a:hover,
+.footer-legal-links a:hover {
+  color: #f3d4a3;
+}
+
+.footer-legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  font-size: 12px;
+}
+
+.site-footer a:focus-visible {
+  border-radius: 2px;
+  outline: 2px solid #f3d4a3;
+  outline-offset: 3px;
+}
+
+.site-footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(247, 243, 233, .2);
+  color: #d7e0d7;
+  font-size: 12px;
 }
 
 .fondoCrearTurno{
@@ -242,4 +336,35 @@ padding: 10px;
   font-weight: normal;
   text-align: center;
 
+}
+
+@media (max-width: 700px) {
+  .site-footer {
+    padding: 34px 24px 18px;
+  }
+
+  .site-footer-main {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 22px;
+  }
+
+  .site-footer-brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 460px) {
+  .site-footer-main {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .site-footer-brand {
+    grid-column: auto;
+  }
+
+  .site-footer-bottom {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\ResendSslPolicy;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -25,7 +26,13 @@ class ResendApiMailer
         }
 
         try {
-            $response = Http::acceptJson()
+            $request = Http::acceptJson();
+
+            if (!ResendSslPolicy::shouldVerify((string) config('app.env'), (bool) config('services.resend.verify_ssl', true))) {
+                $request = $request->withoutVerifying();
+            }
+
+            $response = $request
                 ->withToken($apiKey)
                 ->withHeaders(['Idempotency-Key' => substr($idempotencyKey, 0, 256)])
                 ->timeout(self::TIMEOUT_SECONDS)

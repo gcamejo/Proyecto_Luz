@@ -31,32 +31,32 @@ const Inicio = () => {
 
         <div className="inicio-actividades">
           <article className="inicio-actividad">
-            <img src="/img/ActiYoga.jpg" alt="Yoga" />
-            <div>
+            <div className="inicio-actividad-imagen">
+              <img src="/img/ActiYoga.jpg" alt="" />
               <h3>Yoga</h3>
-              <p>Encuentra el equilibrio perfecto entre cuerpo, mente y espíritu.</p>
             </div>
+            <p>Encuentra el equilibrio perfecto entre cuerpo, mente y espíritu.</p>
           </article>
           <article className="inicio-actividad">
-            <img src="/img/Constelaciones4.jpg" alt="Espacio preparado para una sesión de constelaciones" />
-            <div>
+            <div className="inicio-actividad-imagen">
+              <img src="/img/Constelaciones4.jpg" alt="" />
               <h3>Constelaciones</h3>
-              <p>Un espacio de escucha para mirar tus vínculos desde otra perspectiva.</p>
             </div>
+            <p>Un espacio de escucha para mirar tus vínculos desde otra perspectiva.</p>
           </article>
           <article className="inicio-actividad">
-            <img src="/img/CuencoAgua.png" alt="Cuenco en el agua, una sesión de bienestar" />
-            <div>
+            <div className="inicio-actividad-imagen">
+              <img src="/img/CuencoAgua.png" alt="" />
               <h3>Sonido y pausa</h3>
-              <p>Regalate un momento de quietud y atención plena.</p>
             </div>
+            <p>Regalate un momento de quietud y atención plena.</p>
           </article>
           <article className="inicio-actividad">
-            <img src="/img/Cuencoterapia4.jpg" alt="Cuencos preparados para una práctica sonora" />
-            <div>
+            <div className="inicio-actividad-imagen">
+              <img src="/img/Cuencoterapia4.jpg" alt="" />
               <h3>Cuencoterapia</h3>
-              <p>Dejá que el sonido acompañe un descanso profundo y reparador.</p>
             </div>
+            <p>Dejá que el sonido acompañe un descanso profundo y reparador.</p>
           </article>
         </div>
         <Link className="inicio-more-link" to="/actividades">Ver todas las actividades <span aria-hidden="true">→</span></Link>

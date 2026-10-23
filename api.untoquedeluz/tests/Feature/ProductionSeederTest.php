@@ -9,6 +9,7 @@ use Database\Seeders\ConfiguracionSeeder;
 use Database\Seeders\FeriadosArgentinaSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 class ProductionSeederTest extends TestCase
@@ -68,5 +69,51 @@ class ProductionSeederTest extends TestCase
             'clave' => 'horas_aviso_minimas',
             'valor' => '24',
         ]);
+    }
+
+    public function test_timezone_and_production_logging_configuration_are_documented_in_env_examples(): void
+    {
+        $this->assertSame('America/Argentina/Buenos_Aires', config('app.timezone'));
+
+        $development = file_get_contents(base_path('.env.example'));
+        $production = file_get_contents(base_path('.env.production.example'));
+        $this->assertStringContainsString('APP_TIMEZONE=America/Argentina/Buenos_Aires', $development);
+        $this->assertStringContainsString('SANCTUM_EXPIRATION_MINUTES=43200', $development);
+        $this->assertStringContainsString('SANCTUM_TOKEN_TTL_MINUTES=43200', $development);
+        $this->assertStringContainsString('APP_ENV=production', $production);
+        $this->assertStringContainsString('APP_DEBUG=false', $production);
+        $this->assertStringContainsString('APP_TIMEZONE=America/Argentina/Buenos_Aires', $production);
+        $this->assertStringContainsString('LOG_CHANNEL=daily', $production);
+        $this->assertStringContainsString('LOG_DAYS=7', $production);
+        $this->assertStringContainsString('LOG_LEVEL=warning', $production);
+        $this->assertStringContainsString('SANCTUM_EXPIRATION_MINUTES=43200', $production);
+        $this->assertStringContainsString('SANCTUM_TOKEN_TTL_MINUTES=43200', $production);
+    }
+
+    public function test_credit_expiration_command_is_registered_and_idempotent_in_app_timezone(): void
+    {
+        config(['app.timezone' => 'America/Argentina/Buenos_Aires']);
+        Carbon::setTestNow(Carbon::parse('2026-10-01 00:30:00', config('app.timezone')));
+
+        try {
+            $this->assertArrayHasKey('booking:expire-credits', Artisan::all());
+
+            $expired = \App\Models\Recuperacion::factory()->create([
+                'estado' => 'disponible',
+                'vence_en' => '2026-09-30',
+            ]);
+            $today = \App\Models\Recuperacion::factory()->create([
+                'estado' => 'disponible',
+                'vence_en' => '2026-10-01',
+            ]);
+
+            $this->artisan('booking:expire-credits')->assertExitCode(0);
+            $this->artisan('booking:expire-credits')->assertExitCode(0);
+
+            $this->assertSame('vencida', $expired->fresh()->estado);
+            $this->assertSame('disponible', $today->fresh()->estado);
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 }

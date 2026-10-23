@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 import { clearAuthSession, loadAuthSession, saveAuthSession } from '../src/store/authSession.js'
 
@@ -35,4 +36,12 @@ test('rejects and clears invalid stored session data', () => {
 
   assert.equal(loadAuthSession(storage), null)
   assert.equal(storage.getItem('un-toque-de-luz.auth-session'), null)
+})
+
+test('login uses the bearer endpoint directly and propagates request failures', () => {
+  const loginSource = readFileSync(new URL('../src/store/Slice/loginUsuario/loginUsuario.js', import.meta.url), 'utf8')
+
+  assert.doesNotMatch(loginSource, /csrf-cookie/)
+  assert.match(loginSource, /await axios\.post\(apiEndPoint, values\)/)
+  assert.match(loginSource, /catch \(error\)[\s\S]*dispatch\(setError\(error\.message\)\)/)
 })

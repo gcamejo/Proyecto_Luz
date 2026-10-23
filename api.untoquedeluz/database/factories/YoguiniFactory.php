@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Yoguini;
+use App\Services\LegalConsentService;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 
@@ -23,5 +24,12 @@ class YoguiniFactory extends Factory
             'password' => Hash::make('password'),
             'perfil' => 'user',
         ];
+    }
+
+    public function configure()
+    {
+        return $this->afterCreating(function (Yoguini $yoguini) {
+            app(LegalConsentService::class)->acceptCurrent($yoguini);
+        });
     }
 }

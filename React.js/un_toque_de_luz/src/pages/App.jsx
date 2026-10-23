@@ -26,6 +26,7 @@ import FichaEdit from "./FichaEdit"
 //import AdminServicio from "./AdminServicio"
 //import AdminHorarios from "./AdminHorarios"
 import Footer from "../components/Footer"
+import LegalConsentGate from "../components/LegalConsentGate"
 import ActividadesEdit from "./ActividadesEdit"
 import ActividadesCreate from "./ActividadesCreate"
 import BookingStudent from "./BookingStudent"
@@ -36,6 +37,7 @@ import MisPagos from "./MisPagos"
 import TurnosClases from "./TurnosClases"
 import YogaProgram from "./YogaProgram"
 import Perfil from "./Perfil"
+import LegalPage from "./LegalPage"
 
 
 
@@ -52,6 +54,7 @@ return (
   
   <BrowserRouter>
     <RouteSeo/>
+    <LegalConsentGate>
           <header>
 
               <Navbar/>
@@ -67,6 +70,8 @@ return (
                   <Route path="/actividades" element={<Actividades admin={false}/>}/>
                   <Route path="/login" element={<Login/>}/>
                   <Route path="/cargarFicha/" element={<FichaCreate/>}/>
+                  <Route path="/privacidad" element={<LegalPage/>}/>
+                  <Route path="/terminos" element={<LegalPage/>}/>
                   {token ?
                           <>
                           <Route path="/perfil" element={<Perfil/>}/>
@@ -96,12 +101,12 @@ return (
                 </Routes>
         </main>
           
-  </BrowserRouter>
-          
         <footer>
                 <Footer/>    
 
         </footer>
+    </LegalConsentGate>
+  </BrowserRouter>
           
   
 

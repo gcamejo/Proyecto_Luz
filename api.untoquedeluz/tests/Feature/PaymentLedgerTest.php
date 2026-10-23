@@ -32,8 +32,8 @@ class PaymentLedgerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['app.timezone' => 'UTC']);
-        Carbon::setTestNow(Carbon::parse('2026-10-14 12:00:00', 'UTC'));
+        config(['app.timezone' => 'America/Argentina/Buenos_Aires']);
+        Carbon::setTestNow(Carbon::parse('2026-10-14 12:00:00', config('app.timezone')));
         $this->admin = Yoguini::factory()->create(['perfil' => 'Admin']);
     }
 
@@ -310,6 +310,10 @@ class PaymentLedgerTest extends TestCase
 
     public function test_monthly_summary_separates_applied_to_the_period_from_collected_in_the_month()
     {
+        $this->assertSame('America/Argentina/Buenos_Aires', config('app.timezone'));
+        $this->assertSame('America/Argentina/Buenos_Aires', Carbon::now()->timezoneName);
+        Carbon::setTestNow(Carbon::parse('2026-10-31 23:30:00', config('app.timezone')));
+
         $first = Yoguini::factory()->create();
         $second = Yoguini::factory()->create();
         $this->charge($first, '1000.00', '2026-10-01');
@@ -319,6 +323,7 @@ class PaymentLedgerTest extends TestCase
         $september = $this->charge($first, '800.00', '2026-09-01');
         $this->pay($first, '1200.00', $september, ['fecha_pago' => '2026-10-05']);
         $this->pay($second, '200.00', $octoberSecond, ['fecha_pago' => '2026-10-10']);
+        $this->pay($first, '50.00', null, ['fecha_pago' => '2026-10-31']);
         $this->pay($first, '100.00', null, ['fecha_pago' => '2026-09-20']);
 
         $this->actingAs($this->admin, 'sanctum')
@@ -329,8 +334,8 @@ class PaymentLedgerTest extends TestCase
                 'facturado' => '1500.00',
                 'aplicado_al_periodo' => '200.00',
                 'pendiente' => '1300.00',
-                'cobrado_en_mes' => '1400.00',
-                'saldo_a_favor_total' => '500.00',
+                'cobrado_en_mes' => '1450.00',
+                'saldo_a_favor_total' => '550.00',
             ]);
     }
 

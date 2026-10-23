@@ -5,6 +5,7 @@ import useSWR from 'swr'
 import fetcher from '../api/fetcher'
 import WhatsAppLink from '../components/WhatsAppLink'
 import { yogaPageContent as content } from '../content/yogaPageContent'
+import { cycleRegistrationFlow } from '../utils/cycleRegistrationFlow'
 import '../Styles/YogaProgram.css'
 
 const dateFormatter = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' })
@@ -37,6 +38,10 @@ const YogaProgram = () => {
           </div>
         </div>
         <Link className="yoga-program-back" to="/">{content.backHome}</Link>
+        <nav className='yoga-program-legal-links' aria-label='Información legal'>
+          <Link to='/privacidad'>Política de Privacidad</Link>
+          <Link to='/terminos'>Términos y Condiciones</Link>
+        </nav>
       </section>
 
       <section className="yoga-program-about" aria-labelledby="yoga-about-title">
@@ -103,7 +108,7 @@ const YogaProgram = () => {
               </ul>
               <footer className="yoga-cycle-footer">
                 <p>{content.bookingPrompt}</p>
-                <Link className="yoga-program-cycle-link" to={actionTarget}>
+                <Link className="yoga-program-cycle-link" to={token ? cycleRegistrationFlow(cycle.id).bookingPath : cycleRegistrationFlow(cycle.id).registerPath}>
                   {token ? content.primaryActionBooking : content.cycleAction}
                 </Link>
               </footer>

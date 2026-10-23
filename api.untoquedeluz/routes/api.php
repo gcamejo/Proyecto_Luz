@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\ActividadController;
 use App\Http\Controllers\Api\AdminNotificationController;
 use App\Http\Controllers\Api\BookingAdminController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\LegalConsentController;
 use App\Http\Controllers\Api\PaymentAdminController;
 use App\Http\Controllers\Api\PaymentStudentController;
 use App\Http\Controllers\Api\PublicYogaCyclesController;
@@ -22,17 +23,26 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+Route::get('/public/legal-parameters', [LegalConsentController::class, 'publicParameters'])->middleware('throttle:public');
+
+Route::middleware(['auth:sanctum', 'legal-consent'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/login', [YoguiniController::class , 'login']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/legal-consents/status', [LegalConsentController::class, 'status']);
+    Route::post('/legal-consents/accept', [LegalConsentController::class, 'accept']);
+    Route::get('/profile/export', [YoguiniController::class, 'exportProfile']);
+    Route::post('/profile/deletion-request', [YoguiniController::class, 'requestDeletion']);
+});
+
+Route::post('/login', [YoguiniController::class, 'login'])->middleware('throttle:login');
 Route::post('/yoguinis', [YoguiniController::class, 'store'])->middleware('throttle:registration');
 Route::get('/public/yoga/cycles', [PublicYogaCyclesController::class, 'index'])->middleware('throttle:public-yoga-cycles');
 
-Route::get('/actividades',[ActividadController::class,'index']);
+Route::get('/actividades', [ActividadController::class, 'index'])->middleware('throttle:public');
 
-Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/notifications')->group(function () {
+Route::middleware(['auth:sanctum', 'legal-consent', 'admin'])->prefix('admin/notifications')->group(function () {
     Route::get('/', [AdminNotificationController::class, 'index']);
     Route::post('/{notificationId}/read', [AdminNotificationController::class, 'markRead']);
     Route::delete('/{notificationId}', [AdminNotificationController::class, 'destroy']);
@@ -41,20 +51,24 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin/notifications')->gro
 
 
 //Rutas protegidas
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'legal-consent'])->group(function () {
     Route::get('/profile', [YoguiniController::class, 'profile']);
-    Route::patch('/profile', [YoguiniController::class, 'updateProfile']);
+    Route::patch('/profile', [YoguiniController::class, 'updateProfile'])->middleware('throttle:password-change');
     Route::get('/perfil', [YoguiniController::class, 'profile']);
-    Route::patch('/perfil', [YoguiniController::class, 'updateProfile']);
+    Route::patch('/perfil', [YoguiniController::class, 'updateProfile'])->middleware('throttle:password-change');
     
     //Rutas a tabla yoguinis
     
     Route::middleware('admin')->controller(YoguiniController::class)->group(function (){
+        Route::post('/admin/yoguinis', 'storeByAdmin');
         Route::get('/yoguinis', 'index');
         Route::get('/yoguinis/{id}', 'edit');
         Route::patch('/yoguinis/{id}',  'update');
         Route::delete('/yoguinis/{id}', 'destroy');
     });
+
+    Route::get('/admin/yoguinis/{yoguini}/legal-consents', [LegalConsentController::class, 'forStudent'])
+        ->middleware('can:viewAny,App\\Models\\Consentimiento');
     
     //Rutas a tabla actividades
     
@@ -70,7 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 });
 
-Route::middleware('auth:sanctum')->prefix('payments')->group(function () {
+Route::middleware(['auth:sanctum', 'legal-consent'])->prefix('payments')->group(function () {
     Route::get('/me', [PaymentStudentController::class, 'show']);
 
     Route::prefix('admin')->middleware('can:manage,App\\Models\\Cargo')->group(function () {
@@ -88,7 +102,7 @@ Route::middleware('auth:sanctum')->prefix('payments')->group(function () {
     });
 });
 
-Route::middleware('auth:sanctum')->prefix('booking')->group(function () {
+Route::middleware(['auth:sanctum', 'legal-consent'])->prefix('booking')->group(function () {
     Route::get('/cycles/active', [BookingController::class, 'activeCycles']);
     Route::get('/me', [BookingController::class, 'myBookings']);
     Route::get('/credits', [BookingController::class, 'myCredits']);

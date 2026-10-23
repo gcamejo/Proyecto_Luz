@@ -95,6 +95,11 @@
   padding: clamp(18px, 3vw, 28px);
 }
 
+.booking-cycle-preselected {
+  border-color: var(--booking-leaf);
+  box-shadow: inset 4px 0 0 var(--booking-leaf);
+}
+
 .booking-cycle-header,
 .booking-section-heading,
 .booking-enrollment > header,

@@ -15,6 +15,10 @@ const Login = () => {
   const [values, handleInputChange, setValues] = useForm({ email: '', password: '' })
   const [mensaje, setMensaje] = useState('')
   const [cargando, setCargando] = useState(false)
+  const registrationRedirect = safeInternalRedirect(new URLSearchParams(location.search).get('redirect'))
+  const registrationPath = registrationRedirect === '/'
+    ? '/cargarFicha'
+    : `/cargarFicha?redirect=${encodeURIComponent(registrationRedirect)}`
 
   useEffect(() => {
     if (!cargando) return
@@ -93,7 +97,10 @@ const Login = () => {
           </button>
 
           <p className="login-register">
-            ¿Todavía no tenés usuario? <Link to="/cargarFicha">Registrate</Link>
+            ¿Todavía no tenés usuario? <Link to={registrationPath}>Registrate</Link>
+          </p>
+          <p className='login-legal-links'>
+            <Link to='/privacidad'>Política de Privacidad</Link> · <Link to='/terminos'>Términos y Condiciones</Link>
           </p>
         </div>
       </form>

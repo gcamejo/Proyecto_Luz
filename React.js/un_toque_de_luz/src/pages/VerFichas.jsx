@@ -2,10 +2,55 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BsPencilSquare, BsTrash, BsSearch } from 'react-icons/bs'
 import { useDispatch, useSelector } from 'react-redux'
+import axios from '../api/axios'
 import { deleteFicha, getFichasYoguinis } from '../store/Slice/Yoguinis/yoguinis'
 import '../Styles/Yoguinis.css'
 
 const errorMessage = (error) => error.response?.data?.message || error.message || 'No se pudo completar la solicitud.'
+
+const LegalConsentHistory = ({ yoguiniId }) => {
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [records, setRecords] = useState([])
+
+  const toggle = async () => {
+    if (open) {
+      setOpen(false)
+      return
+    }
+
+    setOpen(true)
+    setLoading(true)
+    setError('')
+    try {
+      const { data } = await axios.get(`api/admin/yoguinis/${yoguiniId}/legal-consents`)
+      setRecords(data)
+    } catch (requestError) {
+      setError(requestError.response?.data?.message || 'No se pudo cargar el historial de aceptación.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className='yoguini-legal-history'>
+      <button className='yoguini-action' type='button' aria-expanded={open} onClick={toggle}>Ver consentimientos</button>
+      {open && <div className='yoguini-legal-history-panel' aria-live='polite'>
+        {loading && <span role='status'>Cargando…</span>}
+        {error && <span role='alert'>{error}</span>}
+        {!loading && !error && records.length === 0 && <span>Sin aceptaciones registradas</span>}
+        {!loading && !error && records.map(record => (
+          <div key={`${record.tipo}-${record.version}`}>
+            <strong>{record.tipo === 'privacidad' ? 'Privacidad' : 'Términos'}</strong>
+            <span>{record.version}</span>
+            <time dateTime={record.aceptado_en}>{new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(record.aceptado_en))}</time>
+          </div>
+        ))}
+      </div>}
+    </div>
+  )
+}
 
 const VerFichas = () => {
   const dispatch = useDispatch()
@@ -93,6 +138,7 @@ const VerFichas = () => {
                 <th scope="col">Contacto</th>
                 <th scope="col">Dirección</th>
                 <th scope="col">Nacimiento</th>
+                <th scope="col">Consentimientos</th>
                 <th scope="col"><span className="visually-hidden">Acciones</span></th>
               </tr>
             </thead>
@@ -114,6 +160,7 @@ const VerFichas = () => {
                     </td>
                     <td>{ficha.direccion} {ficha.numero}</td>
                     <td>{ficha.fechaNacimiento}</td>
+                    <td><LegalConsentHistory yoguiniId={ficha.id} /></td>
                     <td>
                       <div className="yoguini-actions">
                         <Link className="yoguini-action" to={`/editarFicha/${ficha.id}`} aria-label={`Editar ficha de ${ficha.nombre} ${ficha.apellido}`}>

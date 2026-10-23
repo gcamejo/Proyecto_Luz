@@ -58,7 +58,7 @@ class ActividadController extends Controller
         $archivo = $request->file('file');
         $ext = $archivo->getClientOriginalExtension();
         $nombreImagen = 'actividad_'.now()->format('Ymd_His').'.'.$ext;
-        $path = $archivo->storeAs('public/img', $nombreImagen);
+        $archivo->storeAs('img', $nombreImagen, 'public');
         return $nombreImagen ;
         
         }
@@ -120,14 +120,14 @@ class ActividadController extends Controller
         $Actividad = Actividade::find($id);
 
         $nombreImagen = $Actividad->urlImagen;        
-        $path = 'public/img/'.$nombreImagen;
+        $path = 'img/'.$nombreImagen;
         $mensaje = 'No se elimino archivo';
 
-        if($path != 'public/img/logo_principal.jpg')
+        if($path != 'img/logo_principal.jpg')
         {
-            if(Storage::exists($path))
+            if(Storage::disk('public')->exists($path))
             {                
-                Storage::delete($path);
+                Storage::disk('public')->delete($path);
                 $mensaje='Se elimino el archivo '.$path;
             }
         }

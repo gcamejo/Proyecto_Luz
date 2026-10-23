@@ -433,6 +433,27 @@
   border-top: 1px solid var(--yoguini-line);
 }
 
+.yoguini-privacy-section {
+  width: min(100%, 900px);
+  margin: 24px auto 0;
+  padding: 22px;
+  border: 1px solid var(--yoguini-line);
+  background: var(--yoguini-paper);
+}
+
+.yoguini-privacy-section h2 {
+  margin: 0 0 8px;
+  color: var(--yoguini-ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.yoguini-privacy-section > p:not(.yoguini-message) {
+  color: var(--yoguini-muted);
+  font-size: 14px;
+}
+
 .yoguini-page-status {
   max-width: 900px;
   margin: 40px auto;

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Services\ResendApiMailer;
+use App\Support\ResendSslPolicy;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -10,6 +11,19 @@ use Tests\TestCase;
 
 class ResendApiMailerTest extends TestCase
 {
+    public function test_resend_ssl_verification_can_only_be_disabled_in_local_environment(): void
+    {
+        config(['app.env' => 'local']);
+        $this->assertFalse(ResendSslPolicy::shouldVerify((string) config('app.env'), false));
+
+        foreach (['testing', 'staging', 'production'] as $environment) {
+            config(['app.env' => $environment]);
+            $this->assertTrue(ResendSslPolicy::shouldVerify((string) config('app.env'), false));
+        }
+
+        $this->assertTrue(ResendSslPolicy::shouldVerify('local', true));
+    }
+
     public function test_sends_email_to_resend_http_api_with_idempotency_key()
     {
         config([

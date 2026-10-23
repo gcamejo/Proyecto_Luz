@@ -3,11 +3,23 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AdminStoreYoguiniRequest;
+use App\Http\Requests\StoreYoguiniRequest;
 use Illuminate\Http\Request;
 use App\Models\Yoguini;
+use App\Services\LegalConsentService;
 use App\Services\PasswordChangeNotifier;
+use App\Notifications\PrivacyDeletionRequestedNotification;
+use App\Models\Cargo;
+use App\Models\Inscripcion;
+use App\Models\Pago;
+use App\Models\PagoAplicacion;
+use App\Models\Recuperacion;
+use App\Models\Reserva;
 use App\Services\RegistrationNotifier;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
 
 class YoguiniController extends Controller
@@ -38,23 +50,20 @@ class YoguiniController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(StoreYoguiniRequest $request, LegalConsentService $consents)
     {
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:30',
-            'apellido' => 'required|string|max:30',
-            'direccion' => 'required|string|max:30',
-            'numero' => 'required|integer|min:0',
-            'telefono' => 'required|string|max:30',
-            'fechaNacimiento' => 'required|date',
-            'email' => 'required|email|max:100|unique:yoguinis,email',
-            'password' => 'required|string|min:8|max:100',
-        ]);
+        $validated = $request->validated();
+        unset($validated['acepta_legal']);
 
-        $Yoguini = new Yoguini($validated);
-        $Yoguini->password = Hash::make($validated['password']);
-        $Yoguini->perfil = 'user';
-        $Yoguini->save();
+        $Yoguini = DB::transaction(function () use ($validated, $consents) {
+            $student = new Yoguini($validated);
+            $student->password = Hash::make($validated['password']);
+            $student->perfil = 'user';
+            $student->save();
+            $consents->acceptCurrent($student);
+
+            return $student;
+        });
 
         $registeredAt = now(config('app.timezone'))->toIso8601String();
         app()->terminating(function () use ($Yoguini, $registeredAt) {
@@ -62,6 +71,17 @@ class YoguiniController extends Controller
         });
 
         return response()->json($Yoguini->makeHidden(['password']), 201);
+    }
+
+    public function storeByAdmin(AdminStoreYoguiniRequest $request)
+    {
+        $validated = $request->validated();
+        $student = new Yoguini($validated);
+        $student->password = Hash::make($validated['password']);
+        $student->perfil = 'user';
+        $student->save();
+
+        return response()->json($student->makeHidden(['password']), 201);
     }
 
     /**
@@ -128,6 +148,12 @@ class YoguiniController extends Controller
             ], 409);
         }
 
+        if ($Yoguini->consentimientos()->exists()) {
+            return response()->json([
+                'message' => 'No se puede eliminar esta ficha porque conserva registros de consentimiento legal.',
+            ], 409);
+        }
+
         $Yoguini->delete();
 
         return response()->json(['message' => 'Ficha eliminada correctamente.']);
@@ -142,7 +168,9 @@ class YoguiniController extends Controller
 
         if ($Yoguini && Hash::check($request->password, $Yoguini->password)) {
                         
-            $token = $Yoguini->createToken('auth_token')->plainTextToken;
+            $expiresAt = now(config('app.timezone'))
+                ->addMinutes(config('sanctum.token_ttl_minutes'));
+            $token = $Yoguini->createToken('auth_token', ['*'], $expiresAt)->plainTextToken;
               
             $respon = [
                     'status_code' => 200,
@@ -215,5 +243,66 @@ class YoguiniController extends Controller
         }
 
         return response()->json($user->makeHidden(['password']));
+    }
+
+    public function exportProfile(Request $request)
+    {
+        $user = $request->user();
+        $charges = Cargo::where('user_id', $user->id)->orderBy('periodo')->get([
+            'id', 'inscripcion_id', 'ciclo_id', 'periodo', 'concepto', 'monto_original',
+            'descuento', 'motivo_descuento', 'monto_final', 'vence_el', 'estado',
+            'anulado_en', 'anulado_por', 'motivo_anulacion', 'created_at', 'updated_at',
+        ]);
+        $payments = Pago::where('user_id', $user->id)->orderBy('fecha_pago')->get([
+            'id', 'monto', 'fecha_pago', 'metodo', 'referencia', 'nota', 'registrado_por',
+            'estado', 'anulado_en', 'anulado_por', 'motivo_anulacion', 'created_at', 'updated_at',
+        ]);
+        $applications = PagoAplicacion::whereIn('pago_id', $payments->pluck('id'))
+            ->orderBy('pago_id')->orderBy('id')->get([
+                'id', 'pago_id', 'cargo_id', 'monto', 'estado', 'anulada_en',
+                'anulada_por', 'motivo_anulacion', 'registrado_por', 'created_at', 'updated_at',
+            ]);
+
+        $export = [
+            'exported_at' => now(config('app.timezone'))->toIso8601String(),
+            'profile' => [
+                'nombre' => $user->nombre,
+                'apellido' => $user->apellido,
+                'direccion' => $user->direccion,
+                'numero' => $user->numero,
+                'telefono' => $user->telefono,
+                'fechaNacimiento' => $user->fechaNacimiento,
+                'email' => $user->email,
+                'perfil' => $user->perfil,
+            ],
+            'inscripciones' => Inscripcion::where('user_id', $user->id)->with(['ciclo:id,nombre,fecha_inicio,fecha_fin', 'horarios:id,dia_semana,hora_inicio'])->orderBy('id')->get(),
+            'reservas' => Reserva::where('user_id', $user->id)->with(['clase:id,ciclo_id,horario_id,fecha,hora_inicio,estado', 'clase.ciclo:id,nombre'])->orderBy('id')->get(),
+            'creditos_recuperacion' => Recuperacion::where('user_id', $user->id)->orderBy('id')->get([
+                'id', 'reserva_origen_id', 'inscripcion_id', 'reserva_destino_id', 'vence_en', 'estado', 'created_at', 'updated_at',
+            ]),
+            'consentimientos' => $user->consentimientos()->orderBy('tipo')->orderBy('aceptado_en')->get([
+                'tipo', 'version', 'aceptado_en',
+            ]),
+            'cargos' => $charges,
+            'pagos' => $payments,
+            'aplicaciones_de_pago' => $applications,
+        ];
+
+        return response()->json($export)
+            ->header('Content-Disposition', 'attachment; filename="mis-datos.json"');
+    }
+
+    public function requestDeletion(Request $request)
+    {
+        $student = $request->user();
+        $admins = Yoguini::where('perfil', 'Admin')->get();
+
+        Notification::send($admins, new PrivacyDeletionRequestedNotification(
+            (int) $student->id,
+            trim($student->nombre.' '.$student->apellido),
+            (string) $student->email
+        ));
+
+        return response()->json(['message' => 'Solicitud enviada a administración. Los datos no se eliminaron automáticamente.'], 202);
     }
 }

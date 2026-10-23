@@ -1,0 +1,21 @@
+# Environment files and local secrets
+.env*
+*.env*
+!.env.example
+!.env.production.example
+!**/.env.example
+!**/.env.production.example
+
+# Database exports and backups
+*.sql
+*.sql.*
+*.dump
+*.dump.*
+*.bak
+*.backup
+**/dump/**
+**/dumps/**
+**/backup/**
+**/backups/**
+**/Backups/**
+/release/

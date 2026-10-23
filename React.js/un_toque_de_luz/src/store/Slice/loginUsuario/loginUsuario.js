@@ -36,20 +36,16 @@ export const {setUsuarioLogueado,setToken,setCodigo,setError} = loginUsuarioSlic
 
 export default loginUsuarioSlice.reducer
 
-export const validarUsuario = (values) => (dispatch) => {
-    axios.get('sanctum/csrf-cookie')
-        .then (res =>{
-                axios.post (apiEndPoint, values)
-                    
-                    .then(res=>{
-                            dispatch(setUsuarioLogueado(res.data.user_log))
-                            dispatch(setToken(res.data.access_token))
-                            dispatch(setCodigo(res.data.status_code))
-                            dispatch(setError(null))
-                    })
-            })
-        .catch ((err) => dispatch(setError(err.message)))
-               
+export const validarUsuario = (values) => async (dispatch) => {
+    try {
+        const response = await axios.post(apiEndPoint, values)
+        dispatch(setUsuarioLogueado(response.data.user_log))
+        dispatch(setToken(response.data.access_token))
+        dispatch(setCodigo(response.data.status_code))
+        dispatch(setError(null))
+    } catch (error) {
+        dispatch(setError(error.message))
+    }
 }
 
 export const deleteUsuario = () => (dispatch) => {

@@ -144,6 +144,7 @@ class RegistrationNotificationsTest extends TestCase
             'fechaNacimiento' => '1990-01-01',
             'email' => 'new-student@example.test',
             'password' => 'secure-password',
+            'acepta_legal' => true,
         ];
     }
 }

@@ -17,6 +17,7 @@ class AdminNotificationController extends Controller
             'notifications' => $notifications->map(function ($notification) {
                 return [
                     'id' => $notification->id,
+                        'tipo' => $notification->data['tipo'] ?? 'registro',
                     'nombre' => $notification->data['nombre'] ?? '',
                     'email' => $notification->data['email'] ?? '',
                     'fecha' => $notification->data['fecha'] ?? $notification->created_at->toIso8601String(),

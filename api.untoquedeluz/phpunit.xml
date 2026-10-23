@@ -21,7 +21,11 @@
         <!-- server (not env): concurrency workers are child processes and must not inherit these. -->
         <server name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <server name="APP_TIMEZONE" value="UTC"/>
+        <server name="APP_TIMEZONE" value="America/Argentina/Buenos_Aires"/>
+        <server name="SANCTUM_EXPIRATION_MINUTES" value="43200"/>
+        <server name="LEGAL_POLICY_VERSION" value="borrador-2026-10-23-v1"/>
+        <server name="LEGAL_POLICY_UPDATED_AT" value="2026-10-23"/>
+        <server name="SANCTUM_EXPIRATION_MINUTES" value="43200"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
         <server name="DB_CONNECTION" value="sqlite"/>

@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 let getToken = () => null
-const apiBaseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? `${window.location.protocol}//localhost:8000/` : undefined)
+const apiBaseUrl = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? `${window.location.protocol}//127.0.0.1:8000/` : undefined)
 
 if (!apiBaseUrl) {
   throw new Error('VITE_API_URL must be configured for production builds.')

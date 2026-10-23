@@ -16,8 +16,8 @@ class PublicYogaCyclesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['app.timezone' => 'UTC']);
-        Carbon::setTestNow(Carbon::parse('2026-10-09 08:00:00', 'UTC'));
+        config(['app.timezone' => 'America/Argentina/Buenos_Aires']);
+        Carbon::setTestNow(Carbon::parse('2026-10-09 08:00:00', 'America/Argentina/Buenos_Aires'));
     }
 
     protected function tearDown(): void
@@ -81,6 +81,15 @@ class PublicYogaCyclesTest extends TestCase
         }
 
         $this->getJson('/api/public/yoga/cycles')->assertStatus(429);
+    }
+
+    public function test_public_activities_endpoint_is_throttled(): void
+    {
+        for ($attempt = 0; $attempt < 30; $attempt++) {
+            $this->getJson('/api/actividades')->assertOk();
+        }
+
+        $this->getJson('/api/actividades')->assertStatus(429);
     }
 
     private function cycle($name, $start, $end, $active = true)

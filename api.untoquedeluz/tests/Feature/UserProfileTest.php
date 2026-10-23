@@ -19,6 +19,29 @@ class UserProfileTest extends TestCase
         $this->patchJson('/api/profile', [])->assertUnauthorized();
     }
 
+    public function test_password_change_route_is_throttled(): void
+    {
+        $user = Yoguini::factory()->create();
+        $this->actingAs($user, 'sanctum');
+        $payload = [
+            'nombre' => $user->nombre,
+            'apellido' => $user->apellido,
+            'direccion' => $user->direccion,
+            'numero' => $user->numero,
+            'telefono' => $user->telefono,
+            'fechaNacimiento' => $user->fechaNacimiento,
+            'email' => $user->email,
+            'password' => 'new-secure-password',
+            'password_confirmation' => 'new-secure-password',
+        ];
+
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            $this->patchJson('/api/profile', $payload)->assertOk();
+        }
+
+        $this->patchJson('/api/profile', $payload)->assertStatus(429);
+    }
+
     public function test_user_can_view_own_profile()
     {
         $user = Yoguini::factory()->create([

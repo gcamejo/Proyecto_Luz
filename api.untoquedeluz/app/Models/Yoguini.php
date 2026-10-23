@@ -43,4 +43,9 @@ class Yoguini extends Authenticatable
     {
         return $this->hasMany(Recuperacion::class, 'user_id');
     }
+
+    public function consentimientos()
+    {
+        return $this->hasMany(Consentimiento::class, 'user_id');
+    }
 }
